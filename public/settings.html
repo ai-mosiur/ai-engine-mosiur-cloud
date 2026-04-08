@@ -781,5 +781,24 @@
     }
   });
 })();
-</script></body>
+</script>  <script>
+    // ── Auth check ──────────────────────────────────
+    // Redirect to login if not authenticated
+    (async function() {
+      try {
+        const res = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (!data.authenticated) {
+          window.location.href = '/';
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        window.location.href = '/';
+      }
+    })();
+  </script>
+</body>
 </html>

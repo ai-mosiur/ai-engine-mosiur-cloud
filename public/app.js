@@ -79,3 +79,17 @@ document.addEventListener('keydown', e => {
 document.addEventListener('DOMContentLoaded', () => {
   initDarkMode();
 });
+
+// ─── Logout ───────────────────────────────────────────────
+async function logout() {
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+  } catch (err) {
+    console.error('Logout failed:', err);
+  }
+  // Navigate to login regardless
+  window.location.href = '/';
+}

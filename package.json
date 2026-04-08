@@ -1,0 +1,26 @@
+{
+  "name": "mcloud",
+  "version": "1.0.0",
+  "description": "mCloud — Your personal cloud. Photos, files, notes, and mail — all in one beautiful place.",
+  "author": "Mosiur R Imraan",
+  "license": "MIT",
+  "homepage": "https://cloud.mosiur.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-mosiur/ai-engine-mosiur-cloud"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.1.2",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "start": "vercel start"
+  }
+}

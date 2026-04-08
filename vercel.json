@@ -1,0 +1,106 @@
+{
+  "projectSettings": {
+    "nodeVersion": "18.x"
+  },
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard.html"
+    },
+    {
+      "source": "/mail",
+      "destination": "/mail.html"
+    },
+    {
+      "source": "/calendar",
+      "destination": "/calendar.html"
+    },
+    {
+      "source": "/contacts",
+      "destination": "/contacts.html"
+    },
+    {
+      "source": "/drive",
+      "destination": "/drive.html"
+    },
+    {
+      "source": "/notes",
+      "destination": "/notes.html"
+    },
+    {
+      "source": "/photos",
+      "destination": "/photos.html"
+    },
+    {
+      "source": "/keynote",
+      "destination": "/keynote.html"
+    },
+    {
+      "source": "/numbers",
+      "destination": "/numbers.html"
+    },
+    {
+      "source": "/pages",
+      "destination": "/pages.html"
+    },
+    {
+      "source": "/findmy",
+      "destination": "/findmy.html"
+    },
+    {
+      "source": "/reminders",
+      "destination": "/reminders.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/settings.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
+      "source": "/api/.*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, max-age=0"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        }
+      ]
+    }
+  ]
+}

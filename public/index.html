@@ -10,15 +10,15 @@
   <meta name="keywords" content="mCloud, Mosiur Cloud, personal cloud storage, cloud drive, cloud photos, cloud mail" />
   <meta name="author" content="Mosiur" />
   <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://mcloud.mosiur.com/" />
+  <link rel="canonical" href="https://cloud.mosiur.com/" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="mCloud — Mosiur Cloud" />
   <meta property="og:description" content="Your personal cloud. Photos, files, notes, and mail — all in one beautiful place." />
-  <meta property="og:url" content="https://mcloud.mosiur.com/" />
+  <meta property="og:url" content="https://cloud.mosiur.com/" />
   <meta property="og:site_name" content="mCloud" />
-  <meta property="og:image" content="https://mcloud.mosiur.com/og-image.png" />
+  <meta property="og:image" content="https://cloud.mosiur.com/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
 
@@ -26,7 +26,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="mCloud — Mosiur Cloud" />
   <meta name="twitter:description" content="Your personal cloud. Photos, files, notes, and mail — all in one beautiful place." />
-  <meta name="twitter:image" content="https://mcloud.mosiur.com/og-image.png" />
+  <meta name="twitter:image" content="https://cloud.mosiur.com/og-image.png" />
 
   <!-- Theme color -->
   <meta name="theme-color" content="#6C47FF" />
@@ -383,18 +383,21 @@
 
       setLoading(true);
 
-      // Simulate auth — replace with real API call
       try {
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
 
-        // Demo: accept any non-empty credentials
-        // In production: const res = await fetch('/api/login', { method:'POST', body: JSON.stringify({email, password}) });
-        if (password === 'wrong') {
-          throw new Error('Incorrect account or password.');
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Authentication failed');
         }
 
         // Success — navigate to dashboard
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard';
       } catch (err) {
         setLoading(false);
         showError(err.message || 'Something went wrong. Please try again.');
