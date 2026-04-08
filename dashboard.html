@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mCloud — Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Dashboard-specific additions ─────────────────────────────── */
+
+    /* Storage widget upgrade */
+    .storage-widget {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-5) var(--space-6);
+      max-width: 480px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .storage-widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+
+    .storage-widget-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .storage-info-icon {
+      width: 16px; height: 16px;
+      border-radius: var(--radius-full);
+      border: 1.5px solid var(--color-text-faint);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--color-text-faint);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: default;
+      flex-shrink: 0;
+    }
+
+    .storage-manage-link {
+      font-size: var(--text-xs);
+      color: var(--color-accent);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+    .storage-manage-link:hover { color: var(--color-accent-hover); text-decoration: underline; }
+
+    .storage-used-label {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-2);
+    }
+
+    .storage-bar-lg {
+      height: 8px;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-bottom: var(--space-4);
+    }
+
+    .storage-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      background: var(--color-gradient-storage);
+      transition: width 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .storage-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 50px; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35));
+      border-radius: var(--radius-full);
+    }
+
+    .storage-categories {
+      display: flex;
+      align-items: center;
+      gap: var(--space-5);
+      flex-wrap: wrap;
+    }
+
+    .storage-cat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    .storage-cat-dot {
+      width: 8px; height: 8px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+
+    .storage-cat-dot.violet { background: var(--color-accent); }
+    .storage-cat-dot.blue   { background: #007AFF; }
+    .storage-cat-dot.pink   { background: #FF2D55; }
+
+    .storage-cat-name { font-weight: 500; color: var(--color-text); }
+
+    /* Quick Actions row */
+    .quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      margin-bottom: var(--space-10);
+    }
+
+    .quick-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-full);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition), transform var(--transition-spring), box-shadow var(--transition);
+      font-family: var(--font-body);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .quick-action-btn:hover {
+      background: var(--color-surface-2);
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .quick-action-btn:active { transform: scale(0.97); }
+
+    .quick-action-btn svg {
+      flex-shrink: 0;
+      color: var(--color-accent);
+    }
+
+    /* Suggested section */
+    .suggested-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .suggested-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: box-shadow var(--transition), transform var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .suggested-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--gradient-brand);
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .suggested-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .suggested-card:hover::before { opacity: 0.03; }
+
+    .suggested-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .suggested-content { flex: 1; min-width: 0; position: relative; }
+    .suggested-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      background: rgba(108,71,255,0.10);
+      border-radius: var(--radius-full);
+      padding: 1px 7px;
+      margin-bottom: 4px;
+    }
+    [data-theme='dark'] .suggested-tag {
+      background: rgba(155,127,255,0.15);
+    }
+    .suggested-name {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .suggested-meta {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    .suggested-arrow {
+      color: var(--color-text-faint);
+      flex-shrink: 0;
+      position: relative;
+      transition: color var(--transition), transform var(--transition);
+    }
+    .suggested-card:hover .suggested-arrow {
+      color: var(--color-accent);
+      transform: translateX(3px);
+    }
+
+    /* ── Fixed Footer Bar ─────────────────────────────────────────── */
+    .dash-footer-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 90;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-4);
+      background: var(--color-surface-glass);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-top: 1px solid var(--color-divider);
+      padding: 0 var(--space-6);
+    }
+
+    [data-theme='dark'] .dash-footer-bar {
+      background: rgba(0,0,0,0.75);
+    }
+
+    .footer-bar-storage {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+
+    .footer-bar-storage strong {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .footer-bar-sep {
+      color: var(--color-text-faint);
+      font-size: var(--text-xs);
+    }
+
+    .footer-bar-upgrade {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      background: var(--gradient-brand);
+      color: #fff;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      border-radius: var(--radius-full);
+      text-decoration: none;
+      transition: opacity var(--transition), transform var(--transition-spring), box-shadow var(--transition);
+      cursor: pointer;
+      border: none;
+      font-family: var(--font-body);
+      box-shadow: 0 2px 8px rgba(108,71,255,0.3);
+    }
+
+    .footer-bar-upgrade:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(108,71,255,0.4);
+      color: #fff;
+    }
+
+    /* Main bottom padding accounts for footer bar */
+    .dash-main { padding-bottom: calc(44px + var(--space-8)); }
+
+    /* ── Section header row with "See All" link ───────────────────── */
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: var(--space-5);
+    }
+
+    .section-header .section-title { margin-bottom: 0; }
+
+    .section-see-all {
+      font-size: var(--text-xs);
+      color: var(--color-accent);
+      font-weight: 500;
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+    .section-see-all:hover { color: var(--color-accent-hover); text-decoration: underline; }
+
+    /* ── Avatar ring hover on user-avatar ─────────────────────────── */
+    .user-avatar {
+      position: relative;
+      transition: box-shadow var(--transition), outline-offset var(--transition);
+    }
+    .user-avatar:hover {
+      box-shadow: 0 0 0 2.5px var(--color-accent), 0 0 0 4px rgba(108,71,255,0.20);
+    }
+    [data-theme='dark'] .user-avatar:hover {
+      box-shadow: 0 0 0 2.5px var(--color-accent), 0 0 0 4px rgba(155,127,255,0.25);
+    }
+
+    /* Calendar icon border fix in dark mode */
+    [data-theme='dark'] .app-icon-calendar {
+      background: #2c2c2e !important;
+      border-color: rgba(255,255,255,0.12) !important;
+    }
+
+    /* Settings tile icon */
+    .app-icon-settings {
+      background: linear-gradient(145deg, #8e8e93 0%, #636366 100%) !important;
+    }
+
+    /* Dash welcome area layout */
+    .dash-welcome-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-8);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-8);
+    }
+
+    .dash-greeting-col { flex: 1; min-width: 200px; }
+
+    .dash-greeting {
+      font-size: var(--text-xl);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--color-text);
+      margin-bottom: var(--space-1);
+      line-height: 1.15;
+    }
+
+    .dash-greeting-sub {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      font-weight: 400;
+      margin-bottom: var(--space-6);
+    }
+
+    /* Page enter animation for main content */
+    .dash-main > * {
+      animation: slideUp 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .dash-main > *:nth-child(1) { animation-delay: 30ms; }
+    .dash-main > *:nth-child(2) { animation-delay: 80ms; }
+    .dash-main > *:nth-child(3) { animation-delay: 130ms; }
+    .dash-main > *:nth-child(4) { animation-delay: 180ms; }
+    .dash-main > *:nth-child(5) { animation-delay: 230ms; }
+    .dash-main > *:nth-child(6) { animation-delay: 280ms; }
+
+    /* Responsive tweaks */
+    @media (max-width: 640px) {
+      .dash-footer-bar { height: 48px; }
+      .dash-main { padding-bottom: calc(48px + var(--space-6)); }
+      .storage-widget { max-width: 100%; }
+      .dash-welcome-row { gap: var(--space-5); }
+      .quick-actions { gap: var(--space-2); }
+    }
+  </style>
+</head>
+<body class="dashboard-page">
+
+  <!-- ── Dashboard Header ────────────────────────────────────────── -->
+  <header class="dash-header">
+    <a href="index.html" class="logo-link" aria-label="mCloud Home">
+      <!-- Violet "m" square SVG logo -->
+      <svg class="logo-icon" width="22" height="22" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="logo-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#A78BFA"/>
+            <stop offset="100%" stop-color="#3B0FFF"/>
+          </linearGradient>
+        </defs>
+        <rect width="32" height="32" rx="7" fill="url(#logo-grad)"/>
+        <text x="5" y="23" font-family="'Helvetica Neue',Arial,sans-serif" font-size="19" font-weight="800" fill="white">m</text>
+      </svg>
+      <span class="logo-text">mCloud</span>
+    </a>
+
+    <div class="dash-header-right">
+      <!-- Dark mode toggle -->
+      <button class="nav-btn" data-theme-toggle aria-label="Toggle dark mode">
+        <!-- Moon icon (light mode default) -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- User menu -->
+      <div class="user-menu">
+        <button class="user-avatar" id="userMenuBtn" aria-label="User menu" aria-haspopup="true" aria-expanded="false">
+          <span id="userInitial">M</span>
+        </button>
+
+        <div class="user-dropdown" id="userDropdown" role="menu">
+          <div class="dropdown-header">
+            <div class="dropdown-name" id="dropdownName">Mosiur</div>
+            <div class="dropdown-email" id="dropdownEmail">mosiur@mcloud.mosiur.com</div>
+          </div>
+          <hr class="dropdown-divider" />
+          <a href="#" class="dropdown-item" role="menuitem" onclick="return false;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:8px;vertical-align:middle;color:var(--color-text-muted)"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+            Account Settings
+          </a>
+          <a href="#" class="dropdown-item" role="menuitem" onclick="return false;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:8px;vertical-align:middle;color:var(--color-text-muted)"><path d="M19 18H6a4 4 0 0 1-4-4 4 4 0 0 1 3.1-3.9A6 6 0 0 1 17 8.5a4 4 0 0 1 2 7.5z"/></svg>
+            Manage Storage
+          </a>
+          <a href="#" class="dropdown-item" role="menuitem" onclick="return false;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:8px;vertical-align:middle;color:var(--color-accent)"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+            mCloud+
+          </a>
+          <hr class="dropdown-divider" />
+          <a href="index.html" class="dropdown-item dropdown-signout" role="menuitem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:8px;vertical-align:middle"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Dashboard Main ──────────────────────────────────────────── -->
+  <main class="dash-main">
+
+    <!-- Welcome + Storage -->
+    <div class="dash-welcome-row">
+
+      <!-- Greeting -->
+      <div class="dash-greeting-col">
+        <h1 class="dash-greeting" id="dashGreeting">Good evening, Mosiur</h1>
+        <p class="dash-greeting-sub">Welcome back to your mCloud.</p>
+      </div>
+
+      <!-- Storage Widget -->
+      <div class="storage-widget" id="storageWidget">
+        <div class="storage-widget-header">
+          <div class="storage-widget-title">
+            mCloud Storage
+            <span class="storage-info-icon tooltip" data-tip="Storage breakdown across all apps" tabindex="0" aria-label="Storage info">i</span>
+          </div>
+          <a href="#" class="storage-manage-link" onclick="alert('Manage Storage — coming soon!'); return false;">Manage</a>
+        </div>
+        <div class="storage-used-label">4.2 GB of 50 GB used</div>
+        <div class="storage-bar-lg" role="progressbar" aria-valuenow="8.4" aria-valuemin="0" aria-valuemax="100" aria-label="Storage used: 8.4%">
+          <div class="storage-bar-fill" id="storageFill" style="width: 0%;"></div>
+        </div>
+        <div class="storage-categories">
+          <div class="storage-cat">
+            <span class="storage-cat-dot violet"></span>
+            <span class="storage-cat-name">Photos</span>
+            <span>2.1 GB</span>
+          </div>
+          <div class="storage-cat">
+            <span class="storage-cat-dot blue"></span>
+            <span class="storage-cat-name">Drive</span>
+            <span>1.4 GB</span>
+          </div>
+          <div class="storage-cat">
+            <span class="storage-cat-dot pink"></span>
+            <span class="storage-cat-name">Mail</span>
+            <span>0.7 GB</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions" aria-label="Quick actions">
+      <button class="quick-action-btn" onclick="handleQuickAction('new-note')" aria-label="New Note">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Note
+      </button>
+      <button class="quick-action-btn" onclick="handleQuickAction('upload')" aria-label="Upload file">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Upload
+      </button>
+      <button class="quick-action-btn" onclick="handleQuickAction('compose')" aria-label="Compose mail">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Compose Mail
+      </button>
+      <button class="quick-action-btn" onclick="handleQuickAction('findmy')" aria-label="Find My Devices">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/></svg>
+        Find My Devices
+      </button>
+    </div>
+
+    <!-- App Grid -->
+    <section class="app-grid-section" aria-labelledby="appsHeading">
+      <h2 class="section-title" id="appsHeading">Apps</h2>
+      <div class="app-grid">
+
+        <!-- 1. Mail -->
+        <a href="mail.html" class="app-tile" aria-label="Mail — 3 unread">
+          <div class="app-icon" style="background: linear-gradient(145deg, #5AC8FA 0%, #007AFF 100%);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2.5" fill="white" opacity="0.95"/>
+              <polyline points="2,6 12,13 22,6" stroke="rgba(0,122,255,0.7)" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="app-name">Mail</span>
+          <span class="app-badge" aria-label="3 unread">3</span>
+        </a>
+
+        <!-- 2. Photos -->
+        <a href="photos.html" class="app-tile" aria-label="Photos">
+          <div class="app-icon" style="background: #1c1c1e;">
+            <svg width="42" height="42" viewBox="0 0 42 42" aria-hidden="true">
+              <circle cx="21" cy="21" r="7" fill="white"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#FF9500" transform="rotate(0 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#FFCC00" transform="rotate(30 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#30D158" transform="rotate(60 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#5AC8FA" transform="rotate(90 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#007AFF" transform="rotate(120 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#5856D6" transform="rotate(150 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#FF2D55" transform="rotate(180 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#FF3B30" transform="rotate(210 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#FF9500" transform="rotate(240 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#FFCC00" transform="rotate(270 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#30D158" transform="rotate(300 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="8" rx="1.5" fill="#5AC8FA" transform="rotate(330 21 21)"/>
+            </svg>
+          </div>
+          <span class="app-name">Photos</span>
+        </a>
+
+        <!-- 3. mCloud Drive -->
+        <a href="drive.html" class="app-tile" aria-label="mCloud Drive">
+          <div class="app-icon" style="background: linear-gradient(145deg, #a78bfa 0%, #7c4dff 50%, #4361ee 100%);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 18H6a4 4 0 0 1-4-4 4 4 0 0 1 3.1-3.9A6 6 0 0 1 17 8.5a4 4 0 0 1 2 7.5z" fill="white" opacity="0.95"/>
+              <line x1="12" y1="14" x2="12" y2="22" stroke="rgba(124,77,255,0.7)" stroke-width="2"/>
+              <polyline points="9,17 12,14 15,17" stroke="rgba(124,77,255,0.7)" stroke-width="2" fill="none" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="app-name">mCloud Drive</span>
+        </a>
+
+        <!-- 4. Notes -->
+        <a href="notes.html" class="app-tile" aria-label="Notes">
+          <div class="app-icon" style="background: linear-gradient(145deg, #FFD60A 0%, #FF9F0A 100%);">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="3" width="16" height="18" rx="2" fill="white" opacity="0.9"/>
+              <line x1="8" y1="8" x2="16" y2="8" stroke="#FF9F0A" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="8" y1="11" x2="16" y2="11" stroke="#FF9F0A" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="8" y1="14" x2="13" y2="14" stroke="#FF9F0A" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="app-name">Notes</span>
+        </a>
+
+        <!-- 5. Reminders -->
+        <a href="reminders.html" class="app-tile" aria-label="Reminders">
+          <div class="app-icon" style="background: linear-gradient(145deg, #FF6B6B 0%, #FF3B30 100%);">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" fill="white" opacity="0.9"/>
+              <path d="M9 12l2 2 4-4" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="app-name">Reminders</span>
+        </a>
+
+        <!-- 6. Calendar -->
+        <a href="calendar.html" class="app-tile" aria-label="Calendar — April 8">
+          <div class="app-icon app-icon-calendar" style="background: #ffffff; border: 1.5px solid #e0e0e0;">
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none" aria-hidden="true">
+              <rect x="4" y="6" width="30" height="28" rx="4" fill="#fff"/>
+              <rect x="4" y="6" width="30" height="10" rx="4" fill="#FF3B30"/>
+              <rect x="4" y="12" width="30" height="4" fill="#FF3B30"/>
+              <text x="19" y="32" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" font-weight="700" fill="#1c1c1e">8</text>
+              <text x="19" y="11" text-anchor="middle" font-family="Inter,sans-serif" font-size="6" font-weight="600" fill="white">APRIL</text>
+            </svg>
+          </div>
+          <span class="app-name">Calendar</span>
+        </a>
+
+        <!-- 7. Contacts -->
+        <a href="contacts.html" class="app-tile" aria-label="Contacts">
+          <div class="app-icon" style="background: linear-gradient(145deg,#f0eeff,#d4c4ff);">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" fill="#7c4dff"/>
+              <path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#7c4dff" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="app-name">Contacts</span>
+        </a>
+
+        <!-- 8. Find My -->
+        <a href="findmy.html" class="app-tile" aria-label="Find My">
+          <div class="app-icon" style="background: linear-gradient(145deg, #30D158 0%, #229944 100%);">
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" fill="white" opacity="0.18"/>
+              <circle cx="12" cy="12" r="4" fill="white"/>
+              <line x1="12" y1="3" x2="12" y2="7" stroke="white" stroke-width="2"/>
+              <line x1="12" y1="17" x2="12" y2="21" stroke="white" stroke-width="2"/>
+              <line x1="3" y1="12" x2="7" y2="12" stroke="white" stroke-width="2"/>
+              <line x1="17" y1="12" x2="21" y2="12" stroke="white" stroke-width="2"/>
+            </svg>
+          </div>
+          <span class="app-name">Find My</span>
+        </a>
+
+        <!-- 9. Pages -->
+        <a href="pages.html" class="app-tile" aria-label="Pages">
+          <div class="app-icon" style="background: linear-gradient(145deg, #4FC3F7 0%, #0277BD 100%);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="2" width="16" height="20" rx="2" fill="white" opacity="0.9"/>
+              <line x1="7" y1="7" x2="17" y2="7" stroke="#0277BD" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="7" y1="10" x2="17" y2="10" stroke="#0277BD" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="7" y1="13" x2="17" y2="13" stroke="#0277BD" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="7" y1="16" x2="13" y2="16" stroke="#0277BD" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="app-name">Pages</span>
+        </a>
+
+        <!-- 10. Numbers -->
+        <a href="numbers.html" class="app-tile" aria-label="Numbers">
+          <div class="app-icon" style="background: linear-gradient(145deg, #66BB6A 0%, #2E7D32 100%);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1" fill="white" opacity="0.9"/>
+              <rect x="14" y="3" width="7" height="7" rx="1" fill="white" opacity="0.9"/>
+              <rect x="3" y="14" width="7" height="7" rx="1" fill="white" opacity="0.9"/>
+              <rect x="14" y="14" width="7" height="7" rx="1" fill="white" opacity="0.9"/>
+            </svg>
+          </div>
+          <span class="app-name">Numbers</span>
+        </a>
+
+        <!-- 11. Keynote -->
+        <a href="keynote.html" class="app-tile" aria-label="Keynote">
+          <div class="app-icon" style="background: linear-gradient(145deg, #CE93D8 0%, #7B1FA2 100%);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="12" rx="2" fill="white" opacity="0.9"/>
+              <line x1="12" y1="16" x2="12" y2="20" stroke="white" stroke-width="2"/>
+              <line x1="8" y1="20" x2="16" y2="20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <polygon points="9,7 9,13 16,10" fill="rgba(123,31,162,0.5)"/>
+            </svg>
+          </div>
+          <span class="app-name">Keynote</span>
+        </a>
+
+        <!-- 12. Settings (NEW) -->
+        <a href="settings.html" class="app-tile" aria-label="Settings">
+          <div class="app-icon app-icon-settings">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <!-- Gear / cog icon -->
+              <circle cx="12" cy="12" r="3" fill="white" opacity="0.9"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="white" opacity="0.85"/>
+            </svg>
+          </div>
+          <span class="app-name">Settings</span>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Recently Used -->
+    <section class="recent-section" aria-labelledby="recentHeading" style="margin-bottom: var(--space-10);">
+      <div class="section-header">
+        <h2 class="section-title" id="recentHeading">Recently Used</h2>
+        <a href="#" class="section-see-all" onclick="return false;" aria-label="See all recent files">See All</a>
+      </div>
+      <div class="recent-grid">
+
+        <!-- Card 1: Meeting Notes Q2 -->
+        <div class="recent-card" role="button" tabindex="0" aria-label="Open Meeting Notes Q2 in Notes" onclick="window.location.href='notes.html'">
+          <div class="recent-icon" style="background: linear-gradient(135deg,#FFD60A,#FF9F0A);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="8" y1="13" x2="16" y2="13" stroke-linecap="round"/>
+              <line x1="8" y1="17" x2="13" y2="17" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="recent-name">Meeting Notes — Q2</div>
+            <div class="recent-meta">Notes · 2 hours ago</div>
+          </div>
+        </div>
+
+        <!-- Card 2: Project Proposal.pdf -->
+        <div class="recent-card" role="button" tabindex="0" aria-label="Open Project Proposal in Drive" onclick="window.location.href='drive.html'">
+          <div class="recent-icon" style="background: var(--gradient-brand);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+              <polyline points="13,2 13,9 20,9"/>
+            </svg>
+          </div>
+          <div>
+            <div class="recent-name">Project Proposal.pdf</div>
+            <div class="recent-meta">mCloud Drive · Yesterday</div>
+          </div>
+        </div>
+
+        <!-- Card 3: Design Review -->
+        <div class="recent-card" role="button" tabindex="0" aria-label="Open Design Review in Calendar" onclick="window.location.href='calendar.html'">
+          <div class="recent-icon" style="background: linear-gradient(135deg,#FF6B6B,#FF3B30);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <div class="recent-name">Design Review</div>
+            <div class="recent-meta">Calendar · Today</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Suggested (NEW) -->
+    <section class="suggested-section" aria-labelledby="suggestedHeading" style="margin-bottom: var(--space-10);">
+      <div class="section-header">
+        <h2 class="section-title" id="suggestedHeading">Suggested</h2>
+        <a href="#" class="section-see-all" onclick="return false;" aria-label="See all suggestions">See All</a>
+      </div>
+      <div class="suggested-grid">
+
+        <!-- Suggested 1: Photos from yesterday -->
+        <div class="suggested-card" role="button" tabindex="0" aria-label="View 3 photos from yesterday" onclick="window.location.href='photos.html'">
+          <div class="suggested-icon" style="background: #1c1c1e;">
+            <svg width="26" height="26" viewBox="0 0 42 42" aria-hidden="true">
+              <circle cx="21" cy="21" r="6" fill="white"/>
+              <rect x="19.5" y="4" width="3" height="7.5" rx="1.5" fill="#FF9500" transform="rotate(0 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="7.5" rx="1.5" fill="#30D158" transform="rotate(72 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="7.5" rx="1.5" fill="#007AFF" transform="rotate(144 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="7.5" rx="1.5" fill="#FF2D55" transform="rotate(216 21 21)"/>
+              <rect x="19.5" y="4" width="3" height="7.5" rx="1.5" fill="#FFCC00" transform="rotate(288 21 21)"/>
+            </svg>
+          </div>
+          <div class="suggested-content">
+            <span class="suggested-tag">Photos</span>
+            <div class="suggested-name">3 photos from yesterday</div>
+            <div class="suggested-meta">Tap to view your recent shots</div>
+          </div>
+          <svg class="suggested-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </div>
+
+        <!-- Suggested 2: Invoice due -->
+        <div class="suggested-card" role="button" tabindex="0" aria-label="Open Invoice INV-2026-041 due Apr 30" onclick="window.location.href='mail.html'">
+          <div class="suggested-icon" style="background: linear-gradient(145deg, #5AC8FA 0%, #007AFF 100%);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2.5" fill="white" opacity="0.9"/>
+              <polyline points="2,6 12,13 22,6" stroke="rgba(0,122,255,0.7)" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="suggested-content">
+            <span class="suggested-tag">Mail</span>
+            <div class="suggested-name">Invoice #INV-2026-041 due Apr 30</div>
+            <div class="suggested-meta">Action needed before end of month</div>
+          </div>
+          <svg class="suggested-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Fixed Footer Bar ─────────────────────────────────────────── -->
+  <footer class="dash-footer-bar" aria-label="Storage summary">
+    <span class="footer-bar-storage">
+      <strong>4.2 GB</strong> used of <strong>50 GB</strong>
+    </span>
+    <span class="footer-bar-sep" aria-hidden="true">·</span>
+    <button class="footer-bar-upgrade" onclick="alert('mCloud+ — upgrade coming soon!')" aria-label="Upgrade to mCloud+">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+      </svg>
+      mCloud+
+    </button>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    /* ============================================================
+       mCloud Dashboard — Inline Script
+       All logic that extends app.js specifically for dashboard.html
+       ============================================================ */
+
+    // ── App State ─────────────────────────────────────────────────
+    window.__mCloudState = window.__mCloudState || {
+      user: {
+        name: 'Mosiur',
+        email: 'mosiur@mcloud.mosiur.com'
+      }
+    };
+
+    // Sync with legacy __icloudState if present
+    if (window.__icloudState) {
+      window.__icloudState.user = window.__mCloudState.user.email;
+      window.__icloudState.name = window.__mCloudState.user.name;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const state = window.__mCloudState;
+
+      // ── Time-based Greeting ──────────────────────────────────
+      const greetEl = document.getElementById('dashGreeting');
+      if (greetEl) {
+        const hr = new Date().getHours();
+        const part = hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
+        const name = state.user.name;
+        const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+        greetEl.textContent = 'Good ' + part + ', ' + displayName;
+      }
+
+      // ── Populate user info ───────────────────────────────────
+      const initial = document.getElementById('userInitial');
+      if (initial) initial.textContent = state.user.name.charAt(0).toUpperCase();
+
+      const dName  = document.getElementById('dropdownName');
+      const dEmail = document.getElementById('dropdownEmail');
+      const uName  = state.user.name;
+      if (dName)  dName.textContent  = uName.charAt(0).toUpperCase() + uName.slice(1);
+      if (dEmail) dEmail.textContent = state.user.email;
+
+      // ── User Dropdown Toggle ─────────────────────────────────
+      const menuBtn  = document.getElementById('userMenuBtn');
+      const dropdown = document.getElementById('userDropdown');
+
+      if (menuBtn && dropdown) {
+        menuBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const isOpen = dropdown.classList.toggle('open');
+          menuBtn.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        // Close on outside click
+        document.addEventListener('click', function () {
+          dropdown.classList.remove('open');
+          menuBtn.setAttribute('aria-expanded', 'false');
+        });
+
+        // Prevent closing when clicking inside dropdown
+        dropdown.addEventListener('click', function (e) {
+          e.stopPropagation();
+        });
+
+        // Keyboard: Escape closes dropdown
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') {
+            dropdown.classList.remove('open');
+            menuBtn.setAttribute('aria-expanded', 'false');
+            menuBtn.focus();
+          }
+        });
+      }
+
+      // ── Animate Storage Bar on Load ───────────────────────────
+      const storageFill = document.getElementById('storageFill');
+      if (storageFill) {
+        // Start at 0, animate to 8.4% after a short delay
+        storageFill.style.width = '0%';
+        requestAnimationFrame(function () {
+          setTimeout(function () {
+            storageFill.style.width = '8.4%';
+          }, 350);
+        });
+      }
+
+      // ── App tile hover spring feel ────────────────────────────
+      document.querySelectorAll('.app-tile').forEach(function (tile) {
+        tile.addEventListener('mouseenter', function () {
+          tile.style.transition =
+            'background 160ms ease, transform 280ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 160ms ease, border-color 160ms ease';
+        });
+      });
+
+      // ── Keyboard navigation for recent/suggested cards ────────
+      document.querySelectorAll('[role="button"][tabindex="0"]').forEach(function (card) {
+        card.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            card.click();
+          }
+        });
+      });
+    });
+
+    // ── Quick Action Handlers ──────────────────────────────────────
+    function handleQuickAction(action) {
+      const labels = {
+        'new-note': 'Opening New Note…',
+        'upload':   'Upload — select a file to upload.',
+        'compose':  'Opening Mail Composer…',
+        'findmy':   'Opening Find My Devices…'
+      };
+      const destinations = {
+        'new-note': 'notes.html',
+        'upload':   'drive.html',
+        'compose':  'mail.html',
+        'findmy':   'findmy.html'
+      };
+      // Show brief alert then navigate
+      if (confirm(labels[action] + '\n\nNavigate to the app?')) {
+        window.location.href = destinations[action] || '#';
+      }
+    }
+  </script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

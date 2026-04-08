@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Keynote — mCloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Keynote specific ── */
+    .keynote-shell {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - var(--topbar-h));
+      margin-top: var(--topbar-h);
+      overflow: hidden;
+    }
+
+    .keynote-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Slide filmstrip */
+    .filmstrip {
+      width: 170px;
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slide-thumb {
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: border-color var(--transition), transform 0.15s;
+      position: relative;
+    }
+    .slide-thumb:hover { transform: scale(1.02); }
+    .slide-thumb.active { border-color: var(--color-accent); }
+    .slide-thumb-number {
+      position: absolute;
+      top: 4px;
+      left: 5px;
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .slide-thumb-canvas {
+      width: 100%;
+      aspect-ratio: 16/9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Slide designs */
+    .slide-bg-violet { background: linear-gradient(135deg, #4B2FD6 0%, #7C5CFF 40%, #9B7FFF 100%); }
+    .slide-bg-white { background: #FFFFFF; }
+    [data-theme="dark"] .slide-bg-white { background: #2C2C2E; }
+    .slide-bg-dark { background: linear-gradient(135deg, #1A1040 0%, #2D1B69 100%); }
+    .slide-bg-accent { background: linear-gradient(135deg, #6C47FF 0%, #9B7FFF 100%); }
+
+    /* Main slide canvas area */
+    .slide-stage {
+      flex: 1;
+      background: var(--bg-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .slide-canvas {
+      width: 100%;
+      max-width: 800px;
+      aspect-ratio: 16/9;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-xl);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.3s ease;
+    }
+
+    /* Bottom toolbar */
+    .keynote-toolbar {
+      height: 40px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .slide-nav-btn {
+      width: 28px;
+      height: 28px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition);
+    }
+    .slide-nav-btn:hover { background: var(--color-accent-bg); border-color: var(--color-accent); color: var(--color-accent); }
+    .slide-nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .slide-indicator {
+      font-size: 12px;
+      color: var(--text-secondary);
+      min-width: 55px;
+      text-align: center;
+    }
+    .zoom-display {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Slide content styles */
+    /* Slide 1 — Title */
+    .s1-super {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 6px;
+    }
+    .s1-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
+      text-align: center;
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+    .s1-subtitle {
+      font-size: 10px;
+      color: rgba(255,255,255,0.75);
+      text-align: center;
+    }
+    .s1-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 8px;
+      font-weight: 600;
+      color: #fff;
+      margin-top: 8px;
+    }
+    .s1-logo {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+    }
+
+    /* Slide 2 — Agenda */
+    .s2-wrap {
+      padding: 24px 32px;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .s2-header {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--color-accent);
+      letter-spacing: -0.01em;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--color-accent);
+    }
+    .s2-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 10px;
+      color: var(--text-primary);
+    }
+    .s2-num {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .s2-item-title { font-weight: 600; font-size: 11px; }
+    .s2-item-sub { font-size: 9px; color: var(--text-secondary); margin-top: 1px; }
+
+    /* Slide 3 — Stats */
+    .s3-wrap {
+      padding: 20px 28px;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .s3-header {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+    .s3-stats {
+      display: flex;
+      gap: 16px;
+      flex: 1;
+    }
+    .s3-stat {
+      flex: 1;
+      background: var(--color-accent-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .s3-num {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--color-accent);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .s3-label {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 5px;
+      text-align: center;
+    }
+    .s3-delta {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--green);
+      margin-top: 3px;
+    }
+
+    /* Slide 4 — Thank you */
+    .s4-wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+    }
+    .s4-big {
+      font-size: 36px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
+      text-align: center;
+      line-height: 1;
+    }
+    .s4-sub {
+      font-size: 11px;
+      color: rgba(255,255,255,0.75);
+      text-align: center;
+      margin-top: 8px;
+    }
+    .s4-email {
+      font-size: 10px;
+      color: rgba(255,255,255,0.55);
+      margin-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      padding-top: 10px;
+    }
+    /* Decorative circles */
+    .s4-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* Present overlay */
+    #present-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+    #present-overlay.active {
+      display: flex;
+    }
+    .present-slide {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .present-slide-inner {
+      width: min(100vw, 177.78vh);
+      height: min(56.25vw, 100vh);
+      position: relative;
+      overflow: hidden;
+    }
+    .present-nav {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-full);
+      padding: 6px 14px;
+      backdrop-filter: blur(8px);
+    }
+    .present-nav-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .present-nav-btn:hover { background: rgba(255,255,255,0.1); }
+    .present-counter {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      min-width: 40px;
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+    }
+    .present-exit {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 12px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body class="app-page">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="dashboard.html" class="nav-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        mCloud
+      </a>
+    </div>
+    <div class="topbar-center">
+      <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:-2px; margin-right:4px;">
+        <rect x="3" y="5" width="18" height="14" rx="2" fill="var(--orange)"/>
+        <rect x="10" y="19" width="4" height="2" rx="1" fill="var(--orange)"/>
+        <rect x="8" y="21" width="8" height="1.5" rx="0.75" fill="var(--orange)"/>
+        <circle cx="7" cy="10" r="2" fill="white"/>
+        <rect x="11" y="9" width="6" height="1.5" rx="0.75" fill="white"/>
+        <rect x="11" y="12" width="4" height="1.5" rx="0.75" fill="white"/>
+      </svg>
+      Keynote
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-primary btn-sm" id="present-btn" onclick="startPresent()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Present
+      </button>
+      <button class="nav-btn" data-theme-toggle title="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="keynote-shell">
+    <div class="keynote-body">
+
+      <!-- Filmstrip -->
+      <div class="filmstrip" id="filmstrip">
+
+        <!-- Thumb 1 -->
+        <div class="slide-thumb active" data-slide="1" onclick="gotoSlide(1)">
+          <span class="slide-thumb-number">1</span>
+          <div class="slide-thumb-canvas slide-bg-violet">
+            <div style="font-size:7px; font-weight:800; color:#fff; text-align:center; line-height:1.2; letter-spacing:-0.02em;">mCloud<br/>Overview</div>
+            <div style="font-size:5px; color:rgba(255,255,255,0.65); margin-top:4px; text-align:center;">Q2 2026 · Mosiur</div>
+          </div>
+        </div>
+
+        <!-- Thumb 2 -->
+        <div class="slide-thumb" data-slide="2" onclick="gotoSlide(2)">
+          <span class="slide-thumb-number">2</span>
+          <div class="slide-thumb-canvas slide-bg-white" style="align-items:flex-start; padding:8px;">
+            <div style="font-size:6px; font-weight:700; color:var(--color-accent); margin-bottom:4px; border-bottom:1px solid var(--color-accent); padding-bottom:3px; width:100%;">Agenda</div>
+            <div style="font-size:5px; color:var(--text-primary); line-height:1.8;">● Product Vision<br/>● Q2 Highlights<br/>● Growth Metrics<br/>● Roadmap</div>
+          </div>
+        </div>
+
+        <!-- Thumb 3 -->
+        <div class="slide-thumb" data-slide="3" onclick="gotoSlide(3)">
+          <span class="slide-thumb-number">3</span>
+          <div class="slide-thumb-canvas slide-bg-white" style="flex-direction:row; gap:4px; padding:8px;">
+            <div style="flex:1; background:var(--color-accent-bg); border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px;">
+              <div style="font-size:10px; font-weight:800; color:var(--color-accent);">48K</div>
+              <div style="font-size:4px; color:var(--text-tertiary); text-align:center;">Users</div>
+            </div>
+            <div style="flex:1; background:var(--color-accent-bg); border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px;">
+              <div style="font-size:10px; font-weight:800; color:var(--color-accent);">+40%</div>
+              <div style="font-size:4px; color:var(--text-tertiary); text-align:center;">Growth</div>
+            </div>
+            <div style="flex:1; background:var(--color-accent-bg); border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px;">
+              <div style="font-size:10px; font-weight:800; color:var(--color-accent);">$1.8M</div>
+              <div style="font-size:4px; color:var(--text-tertiary); text-align:center;">ARR</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thumb 4 -->
+        <div class="slide-thumb" data-slide="4" onclick="gotoSlide(4)">
+          <span class="slide-thumb-number">4</span>
+          <div class="slide-thumb-canvas slide-bg-dark">
+            <div style="font-size:8px; font-weight:800; color:#fff; text-align:center; letter-spacing:-0.02em;">Thank You</div>
+            <div style="font-size:5px; color:rgba(255,255,255,0.6); margin-top:3px; text-align:center;">Questions?</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Slide stage -->
+      <div class="slide-stage" id="slide-stage">
+        <div class="slide-canvas" id="slide-canvas">
+          <!-- Content injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom toolbar -->
+    <div class="keynote-toolbar">
+      <div class="toolbar-left">
+        <button class="slide-nav-btn" id="prev-btn" onclick="prevSlide()" disabled>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="slide-indicator" id="slide-indicator">1 of 4</span>
+        <button class="slide-nav-btn" id="next-btn" onclick="nextSlide()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div class="zoom-display">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        100%
+      </div>
+    </div>
+  </div>
+
+  <!-- Present mode overlay -->
+  <div id="present-overlay">
+    <div class="present-slide">
+      <div class="present-slide-inner" id="present-canvas">
+        <!-- Full slide injected here -->
+      </div>
+    </div>
+    <button class="present-exit" onclick="exitPresent()">✕ Exit (Esc)</button>
+    <div class="present-nav">
+      <button class="present-nav-btn" onclick="prevSlidePresent()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="present-counter" id="present-counter">1 / 4</span>
+      <button class="present-nav-btn" onclick="nextSlidePresent()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 4;
+
+    const slides = [
+      null, // 1-indexed
+      // Slide 1 — Title
+      () => {
+        const c = document.getElementById('slide-canvas');
+        c.className = 'slide-canvas slide-bg-violet';
+        c.innerHTML = `
+          <div style="position:absolute; top:14px; left:20px; font-size:13px; font-weight:700; color:rgba(255,255,255,0.9);">
+            <span style="opacity:0.6">m</span>Cloud
+          </div>
+          <div style="position:absolute; top:10px; right:16px; font-size:9px; color:rgba(255,255,255,0.5); font-weight:500;">April 2026</div>
+          <!-- Decorative elements -->
+          <div style="position:absolute; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.04); bottom:-60px; right:-40px;"></div>
+          <div style="position:absolute; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.06); top:-30px; right:80px;"></div>
+          <div style="position:absolute; width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.04); top:20px; left:30px;"></div>
+          <!-- Content -->
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; z-index:1; padding:20px;">
+            <div class="s1-super">Product Overview</div>
+            <div class="s1-title">mCloud Overview<br/><span style="font-weight:300; opacity:0.85;">2026 Edition</span></div>
+            <div class="s1-subtitle">Mosiur · Product Team · Confidential</div>
+            <div class="s1-pill">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Presenting Today
+            </div>
+          </div>`;
+      },
+      // Slide 2 — Agenda
+      () => {
+        const c = document.getElementById('slide-canvas');
+        c.className = 'slide-canvas slide-bg-white';
+        c.innerHTML = `
+          <div class="s2-wrap">
+            <div class="s2-header">Today's Agenda</div>
+            <div class="s2-item">
+              <div class="s2-num">01</div>
+              <div>
+                <div class="s2-item-title">Product Vision &amp; 2026 Strategy</div>
+                <div class="s2-item-sub">Where we're going and why — our north star for the year</div>
+              </div>
+            </div>
+            <div class="s2-item">
+              <div class="s2-num">02</div>
+              <div>
+                <div class="s2-item-title">Q1 Highlights &amp; Key Wins</div>
+                <div class="s2-item-sub">What we shipped, what we learned, and what users love</div>
+              </div>
+            </div>
+            <div class="s2-item">
+              <div class="s2-num">03</div>
+              <div>
+                <div class="s2-item-title">Growth &amp; Metrics Review</div>
+                <div class="s2-item-sub">48K users, $1.8M ARR, 40% QoQ growth — the numbers</div>
+              </div>
+            </div>
+            <div class="s2-item">
+              <div class="s2-num">04</div>
+              <div>
+                <div class="s2-item-title">Q2 Roadmap &amp; Priorities</div>
+                <div class="s2-item-sub">Collaboration, AI Search, Mobile Redesign — what's next</div>
+              </div>
+            </div>
+          </div>`;
+      },
+      // Slide 3 — Stats
+      () => {
+        const c = document.getElementById('slide-canvas');
+        c.className = 'slide-canvas slide-bg-white';
+        c.innerHTML = `
+          <div class="s3-wrap">
+            <div class="s3-header">Q1 2026 — By The Numbers</div>
+            <div class="s3-stats">
+              <div class="s3-stat">
+                <div class="s3-num">48K</div>
+                <div class="s3-label">Monthly Active Users</div>
+                <div class="s3-delta">↑ 40% vs Q4</div>
+              </div>
+              <div class="s3-stat">
+                <div class="s3-num">$1.8M</div>
+                <div class="s3-label">Annual Recurring Revenue</div>
+                <div class="s3-delta">↑ 62% YoY</div>
+              </div>
+              <div class="s3-stat">
+                <div class="s3-num">94%</div>
+                <div class="s3-label">Retention Rate</div>
+                <div class="s3-delta">↑ 8pts vs Q4</div>
+              </div>
+            </div>
+            <div style="margin-top:12px; padding:10px 14px; background:var(--color-accent-bg); border-radius:8px; border-left:3px solid var(--color-accent);">
+              <div style="font-size:9px; font-weight:600; color:var(--color-accent); text-transform:uppercase; letter-spacing:0.06em;">Key Insight</div>
+              <div style="font-size:10px; color:var(--text-primary); margin-top:3px; line-height:1.5;">Collaborative features drove a 3x increase in team plan adoption. Enterprise inquiries up 220%.</div>
+            </div>
+          </div>`;
+      },
+      // Slide 4 — Thank you
+      () => {
+        const c = document.getElementById('slide-canvas');
+        c.className = 'slide-canvas slide-bg-dark';
+        c.innerHTML = `
+          <div class="s4-wrap">
+            <div class="s4-circle" style="width:300px; height:300px; bottom:-100px; right:-80px;"></div>
+            <div class="s4-circle" style="width:150px; height:150px; top:-50px; left:-30px;"></div>
+            <div class="s4-circle" style="width:80px; height:80px; top:20px; right:40px;"></div>
+            <div style="position:relative; z-index:1; text-align:center;">
+              <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:rgba(255,255,255,0.5); margin-bottom:8px;">mCloud · 2026</div>
+              <div class="s4-big">Thank You</div>
+              <div class="s4-sub">Questions &amp; Discussion</div>
+              <div class="s4-email">mosiur@mcloud.mosiur.com</div>
+              <div style="display:flex; gap:8px; justify-content:center; margin-top:14px;">
+                <div style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:4px 12px; font-size:8px; font-weight:600; color:rgba(255,255,255,0.8);">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Open Q&amp;A
+                </div>
+                <div style="display:inline-flex; align-items:center; gap:4px; background:var(--color-accent); border-radius:20px; padding:4px 12px; font-size:8px; font-weight:600; color:#fff;">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download Deck
+                </div>
+              </div>
+            </div>
+          </div>`;
+      }
+    ];
+
+    function renderSlide(n) {
+      currentSlide = n;
+      slides[n]();
+
+      // Update filmstrip
+      document.querySelectorAll('.slide-thumb').forEach((t, i) => {
+        t.classList.toggle('active', i + 1 === n);
+      });
+
+      // Update indicator
+      document.getElementById('slide-indicator').textContent = `${n} of ${totalSlides}`;
+      document.getElementById('prev-btn').disabled = n === 1;
+      document.getElementById('next-btn').disabled = n === totalSlides;
+
+      // Scroll thumb into view
+      const thumb = document.querySelector(`[data-slide="${n}"]`);
+      if (thumb) thumb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function gotoSlide(n) {
+      renderSlide(n);
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) renderSlide(currentSlide - 1);
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) renderSlide(currentSlide + 1);
+    }
+
+    // Present mode
+    function startPresent() {
+      const overlay = document.getElementById('present-overlay');
+      overlay.classList.add('active');
+      overlay.style.display = 'flex';
+      renderPresentSlide(currentSlide);
+      document.body.style.overflow = 'hidden';
+    }
+
+    function exitPresent() {
+      const overlay = document.getElementById('present-overlay');
+      overlay.classList.remove('active');
+      overlay.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function renderPresentSlide(n) {
+      // Clone the main canvas content into present overlay
+      const main = document.getElementById('slide-canvas');
+      renderSlide(n);
+      const clone = main.cloneNode(true);
+      clone.style.width = '100%';
+      clone.style.height = '100%';
+      clone.style.maxWidth = 'none';
+      clone.style.borderRadius = '0';
+      clone.style.boxShadow = 'none';
+      clone.style.fontSize = '200%';
+      const container = document.getElementById('present-canvas');
+      container.innerHTML = '';
+      container.appendChild(clone);
+      document.getElementById('present-counter').textContent = `${n} / ${totalSlides}`;
+    }
+
+    function prevSlidePresent() {
+      if (currentSlide > 1) renderPresentSlide(currentSlide - 1);
+    }
+
+    function nextSlidePresent() {
+      if (currentSlide < totalSlides) renderPresentSlide(currentSlide + 1);
+    }
+
+    // Keyboard nav
+    document.addEventListener('keydown', (e) => {
+      const overlay = document.getElementById('present-overlay');
+      const inPresent = overlay && overlay.style.display !== 'none';
+      if (inPresent) {
+        if (e.key === 'ArrowRight' || e.key === ' ') nextSlidePresent();
+        if (e.key === 'ArrowLeft') prevSlidePresent();
+        if (e.key === 'Escape') exitPresent();
+      } else {
+        if (e.key === 'ArrowRight') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+      }
+    });
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSlide(1);
+    });
+  </script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

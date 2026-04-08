@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find My — mCloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Find My — Comprehensive Layout & Component Styles ── */
+
+    /* App shell fills viewport below topbar */
+    .app-shell {
+      display: flex;
+      height: calc(100vh - var(--topbar-h));
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+
+    .findmy-sidebar {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 16px;
+    }
+    .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+    /* Main content = map area */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg-primary);
+      transition: background var(--transition-slow);
+    }
+
+    /* Map pane fills remaining space above info panel */
+    .map-pane {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #F0F0E8;
+      min-height: 0;
+    }
+    [data-theme="dark"] .map-pane { background: #1A1F2E; }
+
+    .map-svg {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Device list items */
+    .device-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      cursor: pointer;
+      transition: background var(--transition);
+      border-radius: 0;
+    }
+    .device-item:hover { background: var(--bg-tertiary); }
+    .device-item.active { background: var(--color-accent-bg); }
+    [data-theme="dark"] .device-item.active { background: rgba(108,71,255,0.15); }
+
+    .device-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 16px;
+      transition: background var(--transition-slow);
+    }
+    [data-theme="dark"] .device-icon { background: rgba(255,255,255,0.08); }
+
+    .device-info { flex: 1; min-width: 0; }
+
+    .device-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .device-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    /* Map pins — absolutely positioned over map */
+    .map-pin {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 10;
+    }
+    .map-pin:hover { transform: translate(-50%, -100%) scale(1.12); }
+    .map-pin.active .pin-body { box-shadow: 0 0 0 5px rgba(108,71,255,0.25), var(--shadow-md); }
+
+    .pin-body {
+      width: 36px;
+      height: 36px;
+      border-radius: 50% 50% 50% 4px;
+      transform: rotate(-45deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-md);
+      transition: box-shadow 0.2s;
+    }
+    .pin-body-inner {
+      transform: rotate(45deg);
+      font-size: 16px;
+      line-height: 1;
+    }
+    .pin-label {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+      pointer-events: none;
+    }
+    .pin-green .pin-body { background: var(--green); }
+    .pin-gray .pin-body  { background: var(--gray-dot); }
+
+    /* Info panel — fixed to bottom of map pane */
+    .info-panel {
+      flex-shrink: 0;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      padding: 16px 20px;
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+
+    .info-panel-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .info-device-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--color-accent-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+      transition: background var(--transition-slow);
+    }
+    [data-theme="dark"] .info-device-icon { background: rgba(108,71,255,0.2); }
+
+    .info-device-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .info-device-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
+    .info-device-battery {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    /* Action buttons in info panel */
+    .info-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      flex: 1;
+      min-width: 110px;
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .action-btn:hover {
+      background: var(--color-accent);
+      color: #fff;
+      border-color: var(--color-accent);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+    .action-btn:active { transform: translateY(0); }
+    .action-btn.danger:hover {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+    }
+    [data-theme="dark"] .action-btn {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+    [data-theme="dark"] .action-btn:hover {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+      color: #fff;
+    }
+
+    /* Confirmation modal */
+    .confirm-modal .modal { max-width: 400px; }
+    .confirm-modal p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 4px;
+    }
+
+    /* Map marker (alternate name used in some contexts) */
+    .map-marker {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      cursor: pointer;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="app-page">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="dashboard.html" class="nav-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        mCloud
+      </a>
+    </div>
+    <div class="topbar-center">Find My</div>
+    <div class="topbar-right">
+      <button class="nav-btn" data-theme-toggle title="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="findmy-sidebar">
+        <div class="sidebar-scroll">
+          <div class="sidebar-section">
+            <div class="sidebar-section-label">Devices</div>
+
+            <div class="device-item active" data-device="iphone" onclick="selectDevice('iphone')">
+              <div class="device-icon">📱</div>
+              <div class="device-info">
+                <div class="device-name">Mosiur's iPhone 16 Pro</div>
+                <div class="device-sub" style="color:var(--green)">● Online</div>
+              </div>
+            </div>
+
+            <div class="device-item" data-device="macbook" onclick="selectDevice('macbook')">
+              <div class="device-icon">💻</div>
+              <div class="device-info">
+                <div class="device-name">Mosiur's MacBook Pro</div>
+                <div class="device-sub" style="color:var(--green)">● Online</div>
+              </div>
+            </div>
+
+            <div class="device-item" data-device="ipad" onclick="selectDevice('ipad')">
+              <div class="device-icon">🖥️</div>
+              <div class="device-info">
+                <div class="device-name">Mosiur's iPad Air</div>
+                <div class="device-sub" style="color:var(--gray-dot)">● Offline</div>
+              </div>
+            </div>
+
+            <div class="device-item" data-device="airpods" onclick="selectDevice('airpods')">
+              <div class="device-icon">🎧</div>
+              <div class="device-info">
+                <div class="device-name">Mosiur's AirPods Pro</div>
+                <div class="device-sub" style="color:var(--gray-dot)">Last seen 2h ago</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider" style="margin: 0 16px;"></div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-section-label">People</div>
+
+            <div class="device-item" data-device="sarah" onclick="selectDevice('sarah')">
+              <div class="device-icon" style="background: #FFE8F0; font-size:15px; font-weight:700; color:#CC0055">SJ</div>
+              <div class="device-info">
+                <div class="device-name">Sarah J.</div>
+                <div class="device-sub" style="color:var(--green)">● Online</div>
+              </div>
+            </div>
+
+            <div class="device-item" data-device="mike" onclick="selectDevice('mike')">
+              <div class="device-icon" style="background: #E8F4FF; font-size:15px; font-weight:700; color:#0055CC">MC</div>
+              <div class="device-info">
+                <div class="device-name">Mike C.</div>
+                <div class="device-sub" style="color:var(--gray-dot)">● Offline</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main: Map -->
+    <main class="main-content" style="position:relative;">
+
+      <!-- Map SVG -->
+      <div class="map-pane" id="map-pane">
+        <svg class="map-svg" viewBox="0 0 900 620" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <!-- Background -->
+          <rect width="900" height="620" fill="var(--bg-secondary)"/>
+
+          <!-- Grid streets - horizontal -->
+          <line x1="0" y1="80" x2="900" y2="80" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="0" y1="160" x2="900" y2="160" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="0" y1="240" x2="900" y2="240" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="0" y1="320" x2="900" y2="320" stroke="var(--border-color)" stroke-width="2"/>
+          <line x1="0" y1="400" x2="900" y2="400" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="0" y1="480" x2="900" y2="480" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="0" y1="560" x2="900" y2="560" stroke="var(--border-color)" stroke-width="1.5"/>
+
+          <!-- Grid streets - vertical -->
+          <line x1="80" y1="0" x2="80" y2="620" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="200" y1="0" x2="200" y2="620" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="320" y1="0" x2="320" y2="620" stroke="var(--border-color)" stroke-width="2"/>
+          <line x1="440" y1="0" x2="440" y2="620" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="560" y1="0" x2="560" y2="620" stroke="var(--border-color)" stroke-width="2"/>
+          <line x1="680" y1="0" x2="680" y2="620" stroke="var(--border-color)" stroke-width="1.5"/>
+          <line x1="800" y1="0" x2="800" y2="620" stroke="var(--border-color)" stroke-width="1.5"/>
+
+          <!-- City blocks (rectangles) -->
+          <rect x="90" y="90" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="210" y="90" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="330" y="90" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="450" y="90" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="570" y="90" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="690" y="90" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+
+          <rect x="90" y="170" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+          <rect x="210" y="170" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.6"/>
+          <rect x="330" y="170" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+          <rect x="450" y="170" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="570" y="170" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.6"/>
+          <rect x="690" y="170" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+
+          <rect x="90" y="250" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="210" y="250" width="220" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.4"/>
+          <rect x="450" y="250" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.6"/>
+          <rect x="570" y="250" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="690" y="250" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+
+          <rect x="90" y="330" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+          <rect x="210" y="330" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="330" y="330" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.6"/>
+          <rect x="450" y="330" width="220" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.4"/>
+          <rect x="690" y="330" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.6"/>
+
+          <rect x="90" y="410" width="220" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+          <rect x="330" y="410" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="450" y="410" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+          <rect x="570" y="410" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.6"/>
+          <rect x="690" y="410" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+
+          <rect x="90" y="490" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.6"/>
+          <rect x="210" y="490" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+          <rect x="330" y="490" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.7"/>
+          <rect x="450" y="490" width="100" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.6"/>
+          <rect x="570" y="490" width="220" height="60" rx="3" fill="var(--bg-tertiary)" opacity="0.5"/>
+
+          <!-- Park area -->
+          <rect x="210" y="250" width="100" height="60" rx="3" fill="#D4EDDA" opacity="0.8"/>
+          <rect x="330" y="410" width="100" height="60" rx="3" fill="#D4EDDA" opacity="0.8"/>
+
+          <!-- Street labels -->
+          <text x="155" y="76" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="var(--text-tertiary)" font-weight="500">Oak Ave</text>
+          <text x="155" y="156" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="var(--text-tertiary)" font-weight="500">Maple St</text>
+          <text x="155" y="316" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="var(--text-tertiary)" font-weight="500" style="font-weight:700">Main Blvd</text>
+          <text x="40" y="165" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="var(--text-tertiary)" font-weight="500" transform="rotate(-90,40,165)">Park Rd</text>
+          <text x="40" y="375" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="var(--text-tertiary)" font-weight="500" transform="rotate(-90,40,375)">Center Ave</text>
+        </svg>
+
+        <!-- Device pins (HTML overlay) -->
+        <div class="map-pin active" id="pin-iphone" style="left:38%; top:42%;" onclick="selectDevice('iphone')">
+          <div class="pin-body" style="background:var(--green)">
+            <span class="pin-body-inner" style="color:#fff; font-size:14px;">📱</span>
+          </div>
+          <div class="pin-label">iPhone 16 Pro</div>
+        </div>
+
+        <div class="map-pin" id="pin-macbook" style="left:62%; top:28%;" onclick="selectDevice('macbook')">
+          <div class="pin-body" style="background:var(--green)">
+            <span class="pin-body-inner" style="color:#fff; font-size:14px;">💻</span>
+          </div>
+          <div class="pin-label">MacBook Pro</div>
+        </div>
+      </div>
+
+      <!-- Info Panel -->
+      <div class="info-panel" id="info-panel">
+        <div class="info-panel-top">
+          <div class="info-device-icon" id="info-icon">📱</div>
+          <div style="flex:1; min-width:0;">
+            <div class="info-device-name" id="info-name">Mosiur's iPhone 16 Pro</div>
+            <div class="info-device-meta" id="info-meta">
+              📍 Home — Gulshan, Dhaka &nbsp;·&nbsp; Last seen: Just now
+            </div>
+          </div>
+          <div class="info-device-battery" id="info-battery">
+            <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+              <rect x="0.5" y="0.5" width="17" height="11" rx="2.5" stroke="currentColor" stroke-width="1.2"/>
+              <rect x="2" y="2" width="11" height="8" rx="1.5" fill="currentColor"/>
+              <path d="M18 4v4a2 2 0 0 0 0-4z" fill="currentColor" opacity="0.4"/>
+            </svg>
+            72%
+          </div>
+        </div>
+        <div class="info-actions">
+          <button class="action-btn" onclick="playSound()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            Play Sound
+          </button>
+          <button class="action-btn" onclick="openModal('lost-modal')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Mark as Lost
+          </button>
+          <button class="action-btn" onclick="showToast('Opening directions...')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Directions
+          </button>
+          <button class="action-btn danger" onclick="openModal('erase-modal')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+            Erase Device
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Mark as Lost Modal -->
+  <div class="modal-overlay confirm-modal" id="lost-modal">
+    <div class="modal">
+      <h3>Mark as Lost?</h3>
+      <p>Your device will be locked with a passcode and a custom message will appear on the screen. Location updates will continue.</p>
+      <div class="form-group" style="margin-top:14px;">
+        <label class="form-label">Contact Number (optional)</label>
+        <input class="form-input" type="tel" placeholder="+880 1234 567890" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message on Screen</label>
+        <input class="form-input" type="text" value="This device is lost. Please call the number above." />
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('lost-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="markLost()">Mark as Lost</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Erase Device Modal -->
+  <div class="modal-overlay confirm-modal" id="erase-modal">
+    <div class="modal">
+      <h3 style="color:var(--red)">⚠ Erase Device?</h3>
+      <p>This will permanently erase all content and settings. <strong>This action cannot be undone.</strong> Your device will no longer be trackable after erasing.</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('erase-modal')">Cancel</button>
+        <button class="btn btn-danger" onclick="eraseDevice()">Erase Device</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Device data
+    const deviceData = {
+      iphone: {
+        name: "Mosiur's iPhone 16 Pro",
+        icon: "📱",
+        meta: "📍 Home — Gulshan, Dhaka · Last seen: Just now",
+        battery: "72%",
+        batteryColor: "var(--green)",
+        online: true
+      },
+      macbook: {
+        name: "Mosiur's MacBook Pro",
+        icon: "💻",
+        meta: "📍 Home Office — Dhaka · Last seen: 5 minutes ago",
+        battery: "91%",
+        batteryColor: "var(--green)",
+        online: true
+      },
+      ipad: {
+        name: "Mosiur's iPad Air",
+        icon: "🖥️",
+        meta: "📍 Home — 2 hours ago · Offline",
+        battery: "34%",
+        batteryColor: "var(--orange)",
+        online: false
+      },
+      airpods: {
+        name: "Mosiur's AirPods Pro",
+        icon: "🎧",
+        meta: "📍 Home — Last seen 2 hours ago · Offline",
+        battery: "—",
+        batteryColor: "var(--gray-dot)",
+        online: false
+      },
+      sarah: {
+        name: "Sarah J.",
+        icon: "👤",
+        meta: "📍 Dhanmondi, Dhaka · Sharing location · Online",
+        battery: "",
+        batteryColor: "var(--green)",
+        online: true
+      },
+      mike: {
+        name: "Mike C.",
+        icon: "👤",
+        meta: "📍 Mirpur, Dhaka · Last seen 4 hours ago · Offline",
+        battery: "",
+        batteryColor: "var(--gray-dot)",
+        online: false
+      }
+    };
+
+    let currentDevice = 'iphone';
+
+    function selectDevice(id) {
+      currentDevice = id;
+      // Update sidebar
+      document.querySelectorAll('.device-item').forEach(el => el.classList.remove('active'));
+      const sidebarItem = document.querySelector(`[data-device="${id}"]`);
+      if (sidebarItem) sidebarItem.classList.add('active');
+
+      // Update pins
+      document.querySelectorAll('.map-pin').forEach(p => p.classList.remove('active'));
+      const pin = document.getElementById(`pin-${id}`);
+      if (pin) {
+        pin.classList.add('active');
+        pin.querySelector('.pin-body').style.background = 'var(--color-accent)';
+        setTimeout(() => {
+          const d = deviceData[id];
+          pin.querySelector('.pin-body').style.background = d.online ? 'var(--green)' : 'var(--gray-dot)';
+          pin.classList.add('active');
+        }, 300);
+      }
+
+      // Update info panel
+      const d = deviceData[id];
+      document.getElementById('info-icon').textContent = d.icon;
+      document.getElementById('info-name').textContent = d.name;
+      document.getElementById('info-meta').textContent = d.meta;
+      const batt = document.getElementById('info-battery');
+      batt.style.color = d.batteryColor;
+      batt.innerHTML = d.battery ? `<svg width="20" height="12" viewBox="0 0 20 12" fill="none"><rect x="0.5" y="0.5" width="17" height="11" rx="2.5" stroke="currentColor" stroke-width="1.2"/><rect x="2" y="2" width="${Math.floor(parseInt(d.battery)/100*11) || 4}" height="8" rx="1.5" fill="currentColor"/><path d="M18 4v4a2 2 0 0 0 0-4z" fill="currentColor" opacity="0.4"/></svg>${d.battery}` : '';
+    }
+
+    function playSound() {
+      const d = deviceData[currentDevice];
+      if (!deviceData[currentDevice].online) {
+        showToast('Cannot play sound — device is offline');
+        return;
+      }
+      showToast(`Playing sound on ${d.name}...`);
+    }
+
+    function markLost() {
+      closeModal('lost-modal');
+      showToast(`${deviceData[currentDevice].name} marked as Lost`);
+    }
+
+    function eraseDevice() {
+      closeModal('erase-modal');
+      showToast(`Erasing ${deviceData[currentDevice].name}...`);
+    }
+  </script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

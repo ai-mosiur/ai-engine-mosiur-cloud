@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes — mCloud</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Notes-specific layout ─────────────────────────────────────────── */
+
+    .notes-layout {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100dvh - 48px);
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────────────────── */
+    .notes-sidebar {
+      width: 220px;
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-divider);
+      padding: var(--space-3) 0;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .notes-sidebar-section {
+      padding: var(--space-2) var(--space-4) var(--space-1);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-faint);
+    }
+
+    .notes-folder-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-sm);
+      margin: 1px var(--space-2);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text);
+      user-select: none;
+      transition: background 0.15s, color 0.15s;
+      min-height: 32px;
+    }
+
+    .notes-folder-item:hover {
+      background: var(--color-surface-2);
+    }
+
+    .notes-folder-item.active {
+      background: rgba(108, 71, 255, 0.1);
+      color: var(--color-accent);
+    }
+
+    .notes-folder-icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--color-accent);
+      opacity: 0.85;
+    }
+
+    .notes-folder-item:not(.active) .notes-folder-icon {
+      color: var(--color-text-muted);
+    }
+
+    .notes-folder-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .notes-folder-badge {
+      background: var(--color-text-faint);
+      color: var(--color-surface);
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      min-width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .notes-folder-item.active .notes-folder-badge {
+      background: var(--color-accent);
+      color: #fff;
+    }
+
+    /* ── Note List Pane ───────────────────────────────────────────────── */
+    .notes-list-pane {
+      width: 300px;
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--color-divider);
+      background: var(--color-bg);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .notes-list-header {
+      padding: var(--space-4) var(--space-4) var(--space-2);
+      border-bottom: 1px solid var(--color-divider);
+      background: var(--color-bg);
+      flex-shrink: 0;
+    }
+
+    .notes-list-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-2);
+    }
+
+    .notes-list-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .notes-list-count {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .notes-search-wrap {
+      display: none;
+      position: relative;
+      margin-top: var(--space-2);
+    }
+
+    .notes-search-wrap.visible {
+      display: block;
+    }
+
+    .notes-search-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: var(--space-2) var(--space-3) var(--space-2) 32px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      font-size: 13px;
+      font-family: var(--font-body);
+      color: var(--color-text);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .notes-search-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(108,71,255,0.12);
+    }
+
+    .notes-search-icon {
+      position: absolute;
+      left: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-faint);
+      pointer-events: none;
+    }
+
+    /* Note items */
+    .notes-list-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-2) 0;
+    }
+
+    .note-item {
+      padding: var(--space-3) var(--space-4);
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-divider);
+      transition: background 0.12s;
+      position: relative;
+    }
+
+    .note-item:hover {
+      background: rgba(108,71,255,0.04);
+    }
+
+    .note-item.active {
+      background: rgba(108,71,255,0.09);
+    }
+
+    .note-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--color-accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .note-item-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: 2px;
+    }
+
+    .note-item-emoji {
+      font-size: 14px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .note-item-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .note-item-date {
+      font-size: 11px;
+      color: var(--color-text-faint);
+      flex-shrink: 0;
+    }
+
+    .note-item-preview {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-left: 22px;
+      line-height: 1.4;
+    }
+
+    /* Pinned indicator */
+    .note-item-pin {
+      color: var(--color-accent);
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+
+    /* ── Editor Pane ──────────────────────────────────────────────────── */
+    .notes-editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-surface);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* Empty state */
+    .notes-empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-4);
+      color: var(--color-text-muted);
+    }
+
+    .notes-empty-icon {
+      width: 72px;
+      height: 72px;
+      opacity: 0.22;
+      color: var(--color-accent);
+    }
+
+    .notes-empty-state h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      margin: 0;
+    }
+
+    .notes-empty-state p {
+      font-size: 13px;
+      color: var(--color-text-faint);
+      margin: 0;
+      text-align: center;
+      max-width: 240px;
+    }
+
+    /* Editor itself */
+    .notes-editor-inner {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .notes-editor-inner.visible {
+      display: flex;
+    }
+
+    /* Format toolbar */
+    .notes-format-bar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: var(--space-2) var(--space-5);
+      border-bottom: 1px solid var(--color-divider);
+      background: var(--color-surface);
+      flex-shrink: 0;
+    }
+
+    .fmt-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--color-text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      transition: background 0.12s, color 0.12s;
+      flex-shrink: 0;
+    }
+
+    .fmt-btn:hover {
+      background: var(--color-surface-2);
+      color: var(--color-text);
+    }
+
+    .fmt-btn.active {
+      background: rgba(108,71,255,0.12);
+      color: var(--color-accent);
+    }
+
+    .fmt-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--color-divider);
+      margin: 0 var(--space-1);
+      flex-shrink: 0;
+    }
+
+    /* Editor body */
+    .notes-editor-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-8) var(--space-10);
+    }
+
+    @media (max-width: 1100px) {
+      .notes-editor-scroll {
+        padding: var(--space-6) var(--space-6);
+      }
+    }
+
+    .notes-editor-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--color-text);
+      border: none;
+      outline: none;
+      width: 100%;
+      background: transparent;
+      font-family: var(--font-body);
+      margin-bottom: var(--space-1);
+      line-height: 1.25;
+      caret-color: var(--color-accent);
+    }
+
+    .notes-editor-title:empty::before {
+      content: attr(data-placeholder);
+      color: var(--color-text-faint);
+      pointer-events: none;
+    }
+
+    .notes-editor-datestamp {
+      font-size: 12px;
+      color: var(--color-text-faint);
+      margin-bottom: var(--space-5);
+      font-weight: 400;
+    }
+
+    .notes-editor-body {
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--color-text);
+      outline: none;
+      min-height: 300px;
+      caret-color: var(--color-accent);
+      font-family: var(--font-body);
+    }
+
+    .notes-editor-body:empty::before {
+      content: attr(data-placeholder);
+      color: var(--color-text-faint);
+      pointer-events: none;
+    }
+
+    .notes-editor-body h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: var(--space-4) 0 var(--space-2);
+      color: var(--color-text);
+      line-height: 1.3;
+    }
+
+    .notes-editor-body h2 {
+      font-size: 17px;
+      font-weight: 600;
+      margin: var(--space-3) 0 var(--space-2);
+      color: var(--color-text);
+      line-height: 1.4;
+    }
+
+    .notes-editor-body ul,
+    .notes-editor-body ol {
+      padding-left: var(--space-6);
+      margin: var(--space-2) 0;
+    }
+
+    .notes-editor-body li {
+      margin-bottom: var(--space-1);
+    }
+
+    .notes-editor-body strong {
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .notes-editor-body em {
+      font-style: italic;
+      color: var(--color-text-muted);
+    }
+
+    /* Checklist items */
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+    }
+
+    .checklist-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--color-border);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.12s, border-color 0.12s;
+    }
+
+    .checklist-checkbox.checked {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+
+    .checklist-checkbox.checked::after {
+      content: '';
+      width: 8px;
+      height: 5px;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(-45deg) translateY(-1px);
+    }
+
+    .checklist-text {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--color-text);
+    }
+
+    .checklist-text.done {
+      text-decoration: line-through;
+      color: var(--color-text-faint);
+    }
+
+    /* Status bar */
+    .notes-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-5);
+      border-top: 1px solid var(--color-divider);
+      background: var(--color-surface);
+      font-size: 11px;
+      color: var(--color-text-faint);
+      flex-shrink: 0;
+    }
+
+    .notes-status-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .notes-save-indicator {
+      color: var(--color-success);
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .notes-save-indicator.visible {
+      opacity: 1;
+    }
+
+    /* Dark mode — notes specific */
+    [data-theme="dark"] .notes-sidebar {
+      background: #1c1c1e;
+      border-right-color: rgba(255,255,255,0.06);
+    }
+
+    [data-theme="dark"] .notes-list-pane {
+      background: #242426;
+      border-right-color: rgba(255,255,255,0.06);
+    }
+
+    [data-theme="dark"] .notes-list-header {
+      background: #242426;
+      border-bottom-color: rgba(255,255,255,0.06);
+    }
+
+    [data-theme="dark"] .notes-search-input {
+      background: #1c1c1e;
+      border-color: rgba(255,255,255,0.1);
+      color: #f5f5f7;
+    }
+
+    [data-theme="dark"] .notes-editor-pane {
+      background: #1c1c1e;
+    }
+
+    [data-theme="dark"] .notes-format-bar,
+    [data-theme="dark"] .notes-status-bar {
+      background: #1c1c1e;
+      border-color: rgba(255,255,255,0.06);
+    }
+
+    [data-theme="dark"] .note-item {
+      border-bottom-color: rgba(255,255,255,0.04);
+    }
+
+    [data-theme="dark"] .note-item:hover {
+      background: rgba(108,71,255,0.08);
+    }
+
+    [data-theme="dark"] .note-item.active {
+      background: rgba(108,71,255,0.14);
+    }
+
+    [data-theme="dark"] .notes-folder-item:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    [data-theme="dark"] .fmt-btn:hover {
+      background: rgba(255,255,255,0.07);
+    }
+
+    [data-theme="dark"] .notes-editor-title,
+    [data-theme="dark"] .notes-editor-body {
+      color: #f5f5f7;
+    }
+
+    [data-theme="dark"] .notes-editor-body h1,
+    [data-theme="dark"] .notes-editor-body h2 {
+      color: #f5f5f7;
+    }
+
+    /* Scrollbar styling */
+    .notes-list-scroll::-webkit-scrollbar,
+    .notes-editor-scroll::-webkit-scrollbar,
+    .notes-sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .notes-list-scroll::-webkit-scrollbar-thumb,
+    .notes-editor-scroll::-webkit-scrollbar-thumb,
+    .notes-sidebar::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: 4px;
+    }
+
+    /* New note animation */
+    @keyframes noteSlideIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .note-item-new {
+      animation: noteSlideIn 0.2s ease forwards;
+    }
+  </style>
+</head>
+<body class="app-page">
+
+  <!-- ── Top bar ─────────────────────────────────────────────────────── -->
+  <header class="app-topbar">
+    <a href="dashboard.html" class="topbar-back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+      mCloud
+    </a>
+    <div class="topbar-title">Notes</div>
+    <div class="topbar-actions">
+      <!-- Dark mode toggle -->
+      <button class="nav-btn" data-theme-toggle aria-label="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <!-- Search button -->
+      <button class="nav-btn" id="searchToggleBtn" aria-label="Search notes">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+      </button>
+      <!-- New note -->
+      <button class="nav-btn" id="newNoteBtn" aria-label="New note" style="color:var(--color-accent);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── 3-pane layout ───────────────────────────────────────────────── -->
+  <div class="notes-layout">
+
+    <!-- LEFT: Sidebar folders -->
+    <aside class="notes-sidebar" id="notesSidebar">
+      <div class="notes-sidebar-section">Folders</div>
+
+      <div class="notes-folder-item active" data-folder="all">
+        <span class="notes-folder-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </span>
+        <span class="notes-folder-label">All Notes</span>
+        <span class="notes-folder-badge" id="allBadge">7</span>
+      </div>
+
+      <div class="notes-folder-item" data-folder="pinned">
+        <span class="notes-folder-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </span>
+        <span class="notes-folder-label">Pinned</span>
+      </div>
+
+      <div class="notes-folder-item" data-folder="work">
+        <span class="notes-folder-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+          </svg>
+        </span>
+        <span class="notes-folder-label">Work</span>
+        <span class="notes-folder-badge">3</span>
+      </div>
+
+      <div class="notes-folder-item" data-folder="personal">
+        <span class="notes-folder-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+        <span class="notes-folder-label">Personal</span>
+        <span class="notes-folder-badge">4</span>
+      </div>
+
+      <div class="notes-folder-item" data-folder="ideas">
+        <span class="notes-folder-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="2" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+          </svg>
+        </span>
+        <span class="notes-folder-label">Ideas</span>
+      </div>
+
+      <div class="notes-folder-item" data-folder="deleted" style="margin-top:var(--space-3);">
+        <span class="notes-folder-icon" style="color:var(--color-error);opacity:0.7;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </span>
+        <span class="notes-folder-label" style="color:var(--color-text-muted);">Recently Deleted</span>
+      </div>
+    </aside>
+
+    <!-- MIDDLE: Note list pane -->
+    <section class="notes-list-pane" id="notesListPane">
+      <div class="notes-list-header">
+        <div class="notes-list-title-row">
+          <span class="notes-list-title" id="listPaneTitle">All Notes</span>
+          <span class="notes-list-count" id="listPaneCount">7 notes</span>
+        </div>
+        <div class="notes-search-wrap" id="searchWrap">
+          <span class="notes-search-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </span>
+          <input class="notes-search-input" id="notesSearchInput" type="text" placeholder="Search notes…" autocomplete="off" />
+        </div>
+      </div>
+      <div class="notes-list-scroll" id="notesListScroll">
+        <!-- Note items injected by JS -->
+      </div>
+    </section>
+
+    <!-- RIGHT: Editor pane -->
+    <section class="notes-editor-pane" id="notesEditorPane">
+
+      <!-- Empty state -->
+      <div class="notes-empty-state" id="notesEmptyState">
+        <svg class="notes-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        <h3>No Note Selected</h3>
+        <p>Select a note or create a new one to get started.</p>
+      </div>
+
+      <!-- Editor inner (hidden until note selected) -->
+      <div class="notes-editor-inner" id="notesEditorInner">
+
+        <!-- Format toolbar -->
+        <div class="notes-format-bar" id="notesFormatBar">
+          <button class="fmt-btn" data-cmd="bold" title="Bold (⌘B)">
+            <strong>B</strong>
+          </button>
+          <button class="fmt-btn" data-cmd="italic" title="Italic (⌘I)">
+            <em>I</em>
+          </button>
+          <div class="fmt-divider"></div>
+          <button class="fmt-btn" data-cmd="h1" title="Heading 1" style="font-size:11px;font-weight:700;width:32px;">H1</button>
+          <button class="fmt-btn" data-cmd="h2" title="Heading 2" style="font-size:11px;font-weight:700;width:32px;">H2</button>
+          <div class="fmt-divider"></div>
+          <button class="fmt-btn" data-cmd="insertUnorderedList" title="Bullet list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/>
+              <circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+              <circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+          <button class="fmt-btn" id="checklistBtn" title="Toggle checklist">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Editor scroll area -->
+        <div class="notes-editor-scroll">
+          <div
+            class="notes-editor-title"
+            id="editorTitle"
+            contenteditable="true"
+            spellcheck="true"
+            data-placeholder="Note title"
+          ></div>
+          <div class="notes-editor-datestamp" id="editorDatestamp"></div>
+          <div
+            class="notes-editor-body"
+            id="editorBody"
+            contenteditable="true"
+            spellcheck="true"
+            data-placeholder="Start writing…"
+          ></div>
+        </div>
+
+        <!-- Status bar -->
+        <div class="notes-status-bar">
+          <div class="notes-status-left">
+            <span id="wordCountLabel">0 words</span>
+            <span id="lastEditedLabel"></span>
+          </div>
+          <span class="notes-save-indicator" id="saveIndicator">Saved</span>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+  /* ================================================================
+     Notes App — mCloud
+     ================================================================ */
+  (function () {
+    'use strict';
+
+    // ── Note data ───────────────────────────────────────────────────
+    const NOTES = [
+      {
+        id: 1,
+        emoji: '📌',
+        pinned: true,
+        folder: 'work',
+        title: 'Meeting Notes — Q2',
+        date: 'April 8, 2026',
+        isoDate: '2026-04-08',
+        preview: 'Discussed project milestones...',
+        body: `<h1>Q2 Planning Meeting</h1>
+<p><strong>Date:</strong> April 8, 2026 &nbsp;|&nbsp; <strong>Attendees:</strong> Mosiur, Sarah, David, Priya, Lena</p>
+
+<h2>Agenda</h2>
+<ul>
+  <li>Review Q1 performance and KPIs</li>
+  <li>Define Q2 milestones and sprint goals</li>
+  <li>Assign ownership for key deliverables</li>
+  <li>Budget and resource allocation discussion</li>
+</ul>
+
+<h2>Key Decisions Made</h2>
+<ul>
+  <li>Launch mCloud Drive public beta by <strong>May 15</strong></li>
+  <li>Onboard 3 new enterprise clients before end of Q2</li>
+  <li>Increase marketing spend by 20% targeting EU region</li>
+  <li>Move daily standups from 9am to 10am (team feedback)</li>
+</ul>
+
+<h2>Action Items</h2>
+<ul>
+  <li>Mosiur → Finalize product roadmap deck by April 12</li>
+  <li>Sarah → Draft onboarding email sequence for enterprise</li>
+  <li>David → Complete Drive API documentation</li>
+  <li>Priya → Set up A/B test for new landing page</li>
+  <li>Lena → Review and sign vendor contracts</li>
+</ul>
+
+<h2>Notes &amp; Discussion</h2>
+<p>Team raised concerns about bandwidth for the Drive beta launch. David suggested bringing in a contract developer for 6 weeks to help with load testing. Agreed to revisit at next Thursday's check-in.</p>
+<p>Priya's A/B tests from Q1 showed a <strong>14% improvement</strong> in conversion on the simplified pricing page. Will apply learnings to the enterprise landing page.</p>`
+      },
+      {
+        id: 2,
+        emoji: '💡',
+        pinned: false,
+        folder: 'ideas',
+        title: 'Book Ideas',
+        date: 'April 7, 2026',
+        isoDate: '2026-04-07',
+        preview: 'Chapter ideas for the second book...',
+        body: `<h1>Book Ideas — Second Book</h1>
+<p><em>Working title: "The Quiet Founders" — Stories of builders who chose depth over hype.</em></p>
+
+<h2>Core Thesis</h2>
+<p>Most startup stories celebrate speed and chaos. This book argues that the most durable companies are built slowly, intentionally, and with obsessive focus on one thing done right.</p>
+
+<h2>Chapter Outline</h2>
+<ul>
+  <li><strong>Chapter 1 — The Myth of the Blitz:</strong> Why "move fast and break things" breaks people too</li>
+  <li><strong>Chapter 2 — Depth Over Width:</strong> Focus as the ultimate competitive advantage</li>
+  <li><strong>Chapter 3 — The Unsexy Work:</strong> How great companies are built in spreadsheets, not pitch decks</li>
+  <li><strong>Chapter 4 — Customer Obsession Without the Buzzword:</strong> Real examples from B2B SaaS</li>
+  <li><strong>Chapter 5 — Saying No at Scale:</strong> Product discipline stories</li>
+  <li><strong>Chapter 6 — The Compound Effect of Quiet Consistency:</strong> Long-term thinking in a short-attention economy</li>
+  <li><strong>Chapter 7 — Epilogue: What "Success" Actually Feels Like</strong></li>
+</ul>
+
+<h2>Key Themes</h2>
+<ul>
+  <li>Patience as strategy, not passivity</li>
+  <li>The underrated power of boring decisions</li>
+  <li>Relationships &gt; networks</li>
+  <li>How to stay creative under constraint</li>
+</ul>
+
+<h2>Potential Interviewees</h2>
+<ul>
+  <li>3 bootstrapped SaaS founders ($1M–$10M ARR range)</li>
+  <li>1 VC-backed company that found success after slowing down</li>
+  <li>A product designer who turned down Series B money</li>
+</ul>`
+      },
+      {
+        id: 3,
+        emoji: '🛒',
+        pinned: false,
+        folder: 'personal',
+        title: 'Grocery List',
+        date: 'April 6, 2026',
+        isoDate: '2026-04-06',
+        preview: 'Almond milk, Greek yogurt...',
+        body: `<h1>Grocery List</h1>
+<p><em>Weekly shop — April 6, 2026</em></p>
+
+<h2>Dairy &amp; Alternatives</h2>
+<ul>
+  <li>Almond milk (unsweetened, 2x)</li>
+  <li>Greek yogurt — full fat</li>
+  <li>Aged cheddar block</li>
+  <li>Butter (salted)</li>
+  <li>Eggs — 12 pack free range</li>
+</ul>
+
+<h2>Produce</h2>
+<ul>
+  <li>Spinach — large bag</li>
+  <li>Cherry tomatoes</li>
+  <li>Avocados (4)</li>
+  <li>Bananas</li>
+  <li>Blueberries</li>
+  <li>Garlic (1 head)</li>
+  <li>Yellow onions (3)</li>
+  <li>Sweet potatoes (2)</li>
+  <li>Lemons (3)</li>
+</ul>
+
+<h2>Pantry</h2>
+<ul>
+  <li>Olive oil (extra virgin)</li>
+  <li>Brown rice — 2lb bag</li>
+  <li>Black beans (2 cans)</li>
+  <li>Chickpeas (1 can)</li>
+  <li>Peanut butter (natural)</li>
+  <li>Dark chocolate 70% (2 bars)</li>
+  <li>Honey (raw)</li>
+  <li>Oat flour</li>
+</ul>
+
+<h2>Proteins</h2>
+<ul>
+  <li>Salmon fillets (2 lbs)</li>
+  <li>Chicken breast (3 lbs)</li>
+  <li>Edamame (frozen)</li>
+</ul>
+
+<h2>Other</h2>
+<ul>
+  <li>Sparkling water — Topo Chico x6</li>
+  <li>Green tea bags</li>
+  <li>Dish soap</li>
+  <li>Paper towels</li>
+</ul>`
+      },
+      {
+        id: 4,
+        emoji: '📊',
+        pinned: false,
+        folder: 'work',
+        title: 'Investment Tracker',
+        date: 'April 5, 2026',
+        isoDate: '2026-04-05',
+        preview: 'Portfolio summary...',
+        body: `<h1>Investment Tracker — Q2 2026</h1>
+<p><em>Last updated: April 5, 2026</em></p>
+
+<h2>Portfolio Overview</h2>
+<ul>
+  <li><strong>Total value:</strong> $284,500</li>
+  <li><strong>YTD return:</strong> +11.4%</li>
+  <li><strong>Cash position:</strong> $18,200 (6.4%)</li>
+  <li><strong>Target allocation:</strong> 70% equities / 20% bonds / 10% alternatives</li>
+</ul>
+
+<h2>Equities — $199,150</h2>
+<ul>
+  <li><strong>AAPL</strong> — 40 shares @ $192.30 = $7,692 (+4.2%)</li>
+  <li><strong>MSFT</strong> — 25 shares @ $418.70 = $10,467 (+8.1%)</li>
+  <li><strong>VTI</strong> — 180 shares @ $248.00 = $44,640 (+9.3% YTD)</li>
+  <li><strong>VXUS</strong> — 120 shares @ $68.40 = $8,208 (+5.6%)</li>
+  <li><strong>QQQ</strong> — 55 shares @ $482.10 = $26,515 (+13.2%)</li>
+  <li><strong>NVDA</strong> — 15 shares @ $880.50 = $13,207 (+21.4%)</li>
+</ul>
+
+<h2>Bonds — $56,900</h2>
+<ul>
+  <li>BND — $38,200 (total bond market)</li>
+  <li>TIPS — $18,700 (inflation-protected)</li>
+</ul>
+
+<h2>Alternatives — $10,250</h2>
+<ul>
+  <li>Bitcoin — 0.18 BTC @ $52,000 = $9,360</li>
+  <li>Ethereum — 0.35 ETH @ $2,540 = $889</li>
+</ul>
+
+<h2>Notes &amp; Next Steps</h2>
+<ul>
+  <li>Rebalance in May — equities slightly over target</li>
+  <li>Consider adding REIT exposure (VNQ)</li>
+  <li>Review BND allocation if Fed signals rate changes</li>
+  <li>Max Roth IRA contribution before April 15 deadline</li>
+</ul>`
+      },
+      {
+        id: 5,
+        emoji: '✍️',
+        pinned: false,
+        folder: 'work',
+        title: 'Website Copy Draft',
+        date: 'April 3, 2026',
+        isoDate: '2026-04-03',
+        preview: 'Hero headline options...',
+        body: `<h1>Website Copy Draft — mCloud</h1>
+<p><em>v1.2 — April 3, 2026</em></p>
+
+<h2>Hero Headline Options</h2>
+<ul>
+  <li>"Your cloud. Your rules." <em>(current favourite)</em></li>
+  <li>"Everything synced. Nothing compromised."</li>
+  <li>"Privacy-first cloud storage for the people who build things."</li>
+  <li>"All your files. All your devices. Zero compromise."</li>
+  <li>"Simple cloud. Serious power."</li>
+</ul>
+
+<h2>Subheadline (Hero)</h2>
+<p>mCloud gives you beautiful, fast cloud storage with end-to-end encryption. Works seamlessly across all your devices — without the privacy trade-offs.</p>
+
+<h2>Feature Section — CTAs</h2>
+<ul>
+  <li>"Start free — no credit card required"</li>
+  <li>"Upgrade when you're ready"</li>
+  <li>"See how mCloud compares"</li>
+  <li>"Talk to our team" (enterprise)</li>
+</ul>
+
+<h2>Trust Signals</h2>
+<ul>
+  <li>"256-bit end-to-end encryption"</li>
+  <li>"GDPR &amp; SOC 2 Type II compliant"</li>
+  <li>"No data sold. Ever."</li>
+  <li>"Used by 40,000+ creators and teams"</li>
+</ul>
+
+<h2>Pricing Page Intro</h2>
+<p>Simple, honest pricing. No hidden fees, no surprise overages. Pick the plan that fits — upgrade or downgrade anytime.</p>
+
+<h2>Footer CTA</h2>
+<p>"Join 40,000 people who've made mCloud their home in the cloud. Free to start."</p>
+
+<h2>Email Opt-In</h2>
+<p>"Get early access to new features, storage upgrades, and the occasional love letter about design."</p>`
+      },
+      {
+        id: 6,
+        emoji: '🎙️',
+        pinned: false,
+        folder: 'ideas',
+        title: 'Podcast Topics',
+        date: 'April 1, 2026',
+        isoDate: '2026-04-01',
+        preview: 'Episode ideas...',
+        body: `<h1>Podcast Topics — "Build Quiet"</h1>
+<p><em>Episode backlog — updated April 1, 2026</em></p>
+
+<h2>Confirmed Episodes (Next 6)</h2>
+<ul>
+  <li><strong>Ep 12:</strong> The real cost of building in public — guest TBD</li>
+  <li><strong>Ep 13:</strong> Bootstrapping to $1M ARR with zero paid ads — with Kiran Mehta (Deskflow)</li>
+  <li><strong>Ep 14:</strong> Why I turned down Series A — solo founder story</li>
+  <li><strong>Ep 15:</strong> Design as a moat — with a Figma alum</li>
+  <li><strong>Ep 16:</strong> Hiring your first 10 employees without burning culture</li>
+  <li><strong>Ep 17:</strong> Making money from content without selling out</li>
+</ul>
+
+<h2>Episode Ideas (Backlog)</h2>
+<ul>
+  <li>How to position a product when the market doesn't know it needs you yet</li>
+  <li>The underrated skill of knowing when to quit</li>
+  <li>Deep work in an always-on world — founders edition</li>
+  <li>Building for longevity: 10-year company thinking</li>
+  <li>The founder's identity crisis (and how to survive it)</li>
+  <li>Why your MVP is probably too big</li>
+  <li>Retention vs acquisition — where should early-stage spend go?</li>
+</ul>
+
+<h2>Format Notes</h2>
+<ul>
+  <li>Episodes: 40–55 minutes</li>
+  <li>Intro music: keep the existing lo-fi theme</li>
+  <li>No ads until episode 20 — maintain listener trust first</li>
+  <li>Record 2 episodes ahead minimum (current buffer: 1)</li>
+</ul>
+
+<h2>Outreach Needed</h2>
+<ul>
+  <li>Ep 12 guest — reach out to 3 candidates this week</li>
+  <li>Confirm Kiran for Ep 13 (follow up by April 5)</li>
+</ul>`
+      },
+      {
+        id: 7,
+        emoji: '📝',
+        pinned: false,
+        folder: 'personal',
+        title: 'Quick Thought',
+        date: 'March 30, 2026',
+        isoDate: '2026-03-30',
+        preview: 'Follow up with Sarah about the timeline.',
+        body: `<p>Follow up with Sarah about the timeline.</p>`
+      }
+    ];
+
+    // State
+    let activeNoteId = null;
+    let activeFolder = 'all';
+    let searchQuery = '';
+    let saveTimer = null;
+
+    // ── DOM refs ──────────────────────────────────────────────────
+    const listScroll        = document.getElementById('notesListScroll');
+    const listPaneTitle     = document.getElementById('listPaneTitle');
+    const listPaneCount     = document.getElementById('listPaneCount');
+    const emptyState        = document.getElementById('notesEmptyState');
+    const editorInner       = document.getElementById('notesEditorInner');
+    const editorTitle       = document.getElementById('editorTitle');
+    const editorDatestamp   = document.getElementById('editorDatestamp');
+    const editorBody        = document.getElementById('editorBody');
+    const wordCountLabel    = document.getElementById('wordCountLabel');
+    const lastEditedLabel   = document.getElementById('lastEditedLabel');
+    const saveIndicator     = document.getElementById('saveIndicator');
+    const searchWrap        = document.getElementById('searchWrap');
+    const searchInput       = document.getElementById('notesSearchInput');
+    const allBadge          = document.getElementById('allBadge');
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function getFilteredNotes() {
+      let notes = NOTES;
+      if (activeFolder !== 'all') {
+        if (activeFolder === 'pinned') {
+          notes = notes.filter(n => n.pinned);
+        } else {
+          notes = notes.filter(n => n.folder === activeFolder);
+        }
+      }
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        notes = notes.filter(n =>
+          n.title.toLowerCase().includes(q) ||
+          n.preview.toLowerCase().includes(q) ||
+          n.body.toLowerCase().includes(q)
+        );
+      }
+      return notes;
+    }
+
+    function formatDate(isoDate) {
+      const d = new Date(isoDate + 'T00:00:00');
+      return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function countWords(text) {
+      const trimmed = text.trim();
+      if (!trimmed) return 0;
+      return trimmed.split(/\s+/).length;
+    }
+
+    function getEditorText() {
+      return (editorTitle.textContent || '') + ' ' + (editorBody.textContent || '');
+    }
+
+    // ── Render note list ─────────────────────────────────────────
+    function renderNoteList(animate = false) {
+      const notes = getFilteredNotes();
+      listPaneCount.textContent = notes.length === 1 ? '1 note' : `${notes.length} notes`;
+
+      listScroll.innerHTML = '';
+      notes.forEach((note, idx) => {
+        const item = document.createElement('div');
+        item.className = 'note-item' + (note.id === activeNoteId ? ' active' : '') + (animate ? ' note-item-new' : '');
+        item.dataset.id = note.id;
+        item.innerHTML = `
+          <div class="note-item-header">
+            <span class="note-item-emoji">${note.emoji}</span>
+            <span class="note-item-title">${escapeHtml(note.title)}</span>
+            <span class="note-item-date">${shortDate(note.date)}</span>
+          </div>
+          <div class="note-item-preview">${escapeHtml(note.preview)}</div>
+        `;
+        item.addEventListener('click', () => openNote(note.id));
+        listScroll.appendChild(item);
+      });
+    }
+
+    function shortDate(dateStr) {
+      // Convert "April 8, 2026" → "Apr 8"
+      const months = {January:'Jan',February:'Feb',March:'Mar',April:'Apr',May:'May',June:'Jun',
+                      July:'Jul',August:'Aug',September:'Sep',October:'Oct',November:'Nov',December:'Dec'};
+      const parts = dateStr.split(' ');
+      if (parts.length >= 2) {
+        const mon = months[parts[0]] || parts[0];
+        const day = parseInt(parts[1]);
+        return `${mon} ${day}`;
+      }
+      return dateStr;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Open note in editor ──────────────────────────────────────
+    function openNote(id) {
+      const note = NOTES.find(n => n.id === id);
+      if (!note) return;
+      activeNoteId = id;
+
+      // Update list active state
+      document.querySelectorAll('.note-item').forEach(el => {
+        el.classList.toggle('active', parseInt(el.dataset.id) === id);
+      });
+
+      // Show editor
+      emptyState.style.display = 'none';
+      editorInner.classList.add('visible');
+
+      // Populate editor
+      editorTitle.textContent = note.title;
+      editorDatestamp.textContent = formatDate(note.isoDate);
+      editorBody.innerHTML = note.body;
+
+      // Update status bar
+      updateWordCount();
+      lastEditedLabel.textContent = `Edited ${note.date}`;
+      saveIndicator.classList.remove('visible');
+    }
+
+    // ── Word count ───────────────────────────────────────────────
+    function updateWordCount() {
+      const words = countWords(getEditorText());
+      wordCountLabel.textContent = words === 1 ? '1 word' : `${words} words`;
+    }
+
+    // ── Auto-save indication ─────────────────────────────────────
+    function triggerAutoSave() {
+      clearTimeout(saveTimer);
+      saveIndicator.classList.remove('visible');
+      saveTimer = setTimeout(() => {
+        // Sync back to in-memory store
+        const note = NOTES.find(n => n.id === activeNoteId);
+        if (note) {
+          note.title = editorTitle.textContent || note.title;
+          note.body = editorBody.innerHTML;
+          note.preview = (editorBody.textContent || '').trim().slice(0, 60) + '...';
+          // Update list item preview
+          const listItem = listScroll.querySelector(`.note-item[data-id="${activeNoteId}"]`);
+          if (listItem) {
+            const prevEl = listItem.querySelector('.note-item-preview');
+            if (prevEl) prevEl.textContent = note.preview;
+            const titleEl = listItem.querySelector('.note-item-title');
+            if (titleEl) titleEl.textContent = note.title;
+          }
+        }
+        const now = new Date();
+        lastEditedLabel.textContent = `Edited just now`;
+        saveIndicator.classList.add('visible');
+        setTimeout(() => saveIndicator.classList.remove('visible'), 2500);
+      }, 1000);
+    }
+
+    // ── New note ─────────────────────────────────────────────────
+    function createNewNote() {
+      const id = Date.now();
+      const today = new Date();
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const dateStr = `${months[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
+      const isoDate = today.toISOString().slice(0, 10);
+
+      const newNote = {
+        id,
+        emoji: '📝',
+        pinned: false,
+        folder: activeFolder === 'all' || activeFolder === 'pinned' || activeFolder === 'deleted' ? 'personal' : activeFolder,
+        title: 'Untitled Note',
+        date: dateStr,
+        isoDate,
+        preview: '',
+        body: ''
+      };
+
+      NOTES.unshift(newNote);
+      allBadge.textContent = NOTES.length;
+      renderNoteList(true);
+      openNote(id);
+
+      // Focus on title
+      setTimeout(() => {
+        editorTitle.focus();
+        const range = document.createRange();
+        range.selectNodeContents(editorTitle);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }, 50);
+    }
+
+    // ── Folder navigation ────────────────────────────────────────
+    function setActiveFolder(folder) {
+      activeFolder = folder;
+      document.querySelectorAll('.notes-folder-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.folder === folder);
+      });
+
+      const labels = {
+        all: 'All Notes',
+        pinned: 'Pinned',
+        work: 'Work',
+        personal: 'Personal',
+        ideas: 'Ideas',
+        deleted: 'Recently Deleted'
+      };
+      listPaneTitle.textContent = labels[folder] || 'Notes';
+      searchQuery = '';
+      searchInput.value = '';
+      renderNoteList();
+    }
+
+    // ── Format toolbar ───────────────────────────────────────────
+    function applyFormat(cmd) {
+      editorBody.focus();
+      if (cmd === 'h1') {
+        document.execCommand('formatBlock', false, 'h1');
+      } else if (cmd === 'h2') {
+        document.execCommand('formatBlock', false, 'h2');
+      } else {
+        document.execCommand(cmd, false, null);
+      }
+    }
+
+    function insertChecklist() {
+      editorBody.focus();
+      const sel = window.getSelection();
+      const selectedText = sel.toString().trim();
+      const text = selectedText || 'New item';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'checklist-item';
+      wrap.innerHTML = `<div class="checklist-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div><span class="checklist-text">${escapeHtml(text)}</span>`;
+
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(wrap);
+      range.setStartAfter(wrap);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      // Checkbox click handler
+      wrap.querySelector('.checklist-checkbox').addEventListener('click', function () {
+        this.classList.toggle('checked');
+        this.setAttribute('aria-checked', this.classList.contains('checked'));
+        const textEl = this.nextElementSibling;
+        if (textEl) textEl.classList.toggle('done', this.classList.contains('checked'));
+      });
+    }
+
+    // ── Search ───────────────────────────────────────────────────
+    function toggleSearch() {
+      const isVisible = searchWrap.classList.contains('visible');
+      searchWrap.classList.toggle('visible', !isVisible);
+      if (!isVisible) {
+        searchInput.focus();
+      } else {
+        searchInput.value = '';
+        searchQuery = '';
+        renderNoteList();
+      }
+    }
+
+    // ── Event bindings ───────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initial render
+      renderNoteList();
+
+      // Folder items
+      document.querySelectorAll('.notes-folder-item').forEach(el => {
+        el.addEventListener('click', () => setActiveFolder(el.dataset.folder));
+      });
+
+      // New note button
+      document.getElementById('newNoteBtn').addEventListener('click', createNewNote);
+
+      // Search toggle
+      document.getElementById('searchToggleBtn').addEventListener('click', toggleSearch);
+
+      // Search input live filter
+      searchInput.addEventListener('input', () => {
+        searchQuery = searchInput.value;
+        renderNoteList();
+      });
+
+      // Format toolbar
+      document.querySelectorAll('.fmt-btn[data-cmd]').forEach(btn => {
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault(); // Don't blur editor
+          applyFormat(btn.dataset.cmd);
+          triggerAutoSave();
+        });
+      });
+
+      document.getElementById('checklistBtn').addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        insertChecklist();
+        triggerAutoSave();
+      });
+
+      // Editor typing events
+      editorTitle.addEventListener('input', () => {
+        updateWordCount();
+        triggerAutoSave();
+      });
+
+      editorBody.addEventListener('input', () => {
+        updateWordCount();
+        triggerAutoSave();
+      });
+
+      // Keyboard shortcut: Cmd+B, Cmd+I in editor
+      [editorTitle, editorBody].forEach(el => {
+        el.addEventListener('keydown', (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+            e.preventDefault();
+            document.execCommand('bold', false, null);
+          }
+          if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+            e.preventDefault();
+            document.execCommand('italic', false, null);
+          }
+        });
+      });
+
+      // Open first note by default
+      if (NOTES.length > 0) {
+        openNote(NOTES[0].id);
+      }
+    });
+  })();
+  </script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

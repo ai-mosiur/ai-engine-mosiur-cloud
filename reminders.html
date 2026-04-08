@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reminders — mCloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Reminders — Comprehensive Layout & Component Styles ── */
+
+    /* App shell — sidebar + main side by side */
+    .app-shell {
+      display: flex;
+      height: calc(100vh - var(--topbar-h));
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+    /* Main content area */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-primary);
+      transition: background var(--transition-slow);
+    }
+
+    /* Main body scrollable area */
+    .reminders-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 24px 24px;
+    }
+    .reminders-body::-webkit-scrollbar { width: 6px; }
+    .reminders-body::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 6px; }
+
+    /* Reminder group wrapper */
+    .reminder-group {
+      margin-bottom: 4px;
+    }
+
+    /* Group section headers */
+    .group-header {
+      padding: 16px 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 2px;
+    }
+
+    /* Individual reminder row */
+    .reminder-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+      transition: opacity 0.3s;
+      cursor: default;
+    }
+    .reminder-item:last-child { border-bottom: none; }
+    .reminder-item.completing { opacity: 0.4; }
+    .reminder-item.completed-item { opacity: 0.5; }
+    .reminder-item.completed-item .reminder-title {
+      text-decoration: line-through;
+      color: var(--text-tertiary);
+    }
+
+    /* Custom circular checkbox */
+    .reminder-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border-color);
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      margin-top: 1px;
+      background: transparent;
+    }
+    .reminder-check:hover {
+      border-color: var(--color-accent);
+      background: var(--color-accent-bg);
+    }
+    .reminder-check.checked {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+    .reminder-check.checked::after {
+      content: '';
+      width: 5px;
+      height: 9px;
+      border-right: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(45deg) translateY(-1px);
+    }
+    [data-theme="dark"] .reminder-check {
+      border-color: rgba(255,255,255,0.2);
+    }
+    [data-theme="dark"] .reminder-check:hover {
+      border-color: var(--color-accent);
+      background: rgba(108,71,255,0.15);
+    }
+
+    /* Priority check border colors */
+    .reminder-check.priority-high:hover,
+    .priority-high .reminder-check:hover { border-color: var(--red); }
+    .reminder-check.priority-medium:hover,
+    .priority-medium .reminder-check:hover { border-color: var(--orange); }
+
+    /* Reminder body text */
+    .reminder-body { flex: 1; min-width: 0; }
+
+    .reminder-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.4;
+      transition: text-decoration 0.2s, color 0.2s;
+    }
+
+    .reminder-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    /* Date badges */
+    .reminder-date {
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .date-today   { color: var(--red); }
+    .date-upcoming { color: var(--text-secondary); }
+
+    /* Priority flags */
+    .priority-flag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+    }
+    .priority-flag.high   { background: #FFECEC; color: var(--red); }
+    .priority-flag.medium { background: #FFF3E0; color: var(--orange); }
+    .priority-flag.low    { background: var(--bg-tertiary); color: var(--text-tertiary); }
+    [data-theme="dark"] .priority-flag.high   { background: rgba(255,59,48,0.15);  color: #FF6B6B; }
+    [data-theme="dark"] .priority-flag.medium { background: rgba(255,149,0,0.15);  color: #FFB340; }
+    [data-theme="dark"] .priority-flag.low    { background: rgba(255,255,255,0.08); color: var(--text-tertiary); }
+
+    /* Recurring badge */
+    .recurring-badge {
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    /* Flag icon */
+    .flag-icon { color: var(--red); font-size: 13px; }
+
+    /* Completed section */
+    .completed-section { margin-top: 20px; }
+
+    .completed-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 6px 0;
+      user-select: none;
+      transition: color var(--transition);
+    }
+    .completed-toggle:hover { color: var(--text-primary); }
+
+    .completed-list {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.35s ease;
+    }
+    .completed-list.open { max-height: 800px; }
+
+    /* Form grid in Add Reminder modal */
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* Colored dots for list category items in sidebar */
+    .list-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body class="app-page">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="dashboard.html" class="nav-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        mCloud
+      </a>
+    </div>
+    <div class="topbar-center">Reminders</div>
+    <div class="topbar-right">
+      <button class="nav-btn" data-theme-toggle title="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Smart Lists</div>
+
+        <div class="sidebar-item active" data-filter="all" onclick="setFilter('all', this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--color-accent)" stroke="none"><rect x="3" y="5" width="18" height="2" rx="1"/><rect x="3" y="11" width="18" height="2" rx="1"/><rect x="3" y="17" width="18" height="2" rx="1"/></svg>
+          All
+          <span class="badge" id="badge-all">12</span>
+        </div>
+
+        <div class="sidebar-item" data-filter="today" onclick="setFilter('today', this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Today
+          <span class="badge" style="background:var(--red)">3</span>
+        </div>
+
+        <div class="sidebar-item" data-filter="scheduled" onclick="setFilter('scheduled', this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Scheduled
+          <span class="badge" style="background:var(--orange)">8</span>
+        </div>
+
+        <div class="sidebar-item" data-filter="flagged" onclick="setFilter('flagged', this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--red)" stroke="none"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/></svg>
+          Flagged
+          <span class="badge" style="background:var(--red)">2</span>
+        </div>
+
+        <div class="sidebar-item" data-filter="completed" onclick="setFilter('completed', this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Completed
+        </div>
+      </div>
+
+      <div class="divider" style="margin: 4px 16px;"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">My Lists</div>
+
+        <div class="sidebar-item" data-filter="Personal" onclick="setFilter('Personal', this)">
+          <span class="list-dot" style="background:#BF5AF2;"></span>
+          Personal
+        </div>
+        <div class="sidebar-item" data-filter="Work" onclick="setFilter('Work', this)">
+          <span class="list-dot" style="background:#007AFF;"></span>
+          Work
+        </div>
+        <div class="sidebar-item" data-filter="Shopping" onclick="setFilter('Shopping', this)">
+          <span class="list-dot" style="background:#FF9500;"></span>
+          Shopping
+        </div>
+        <div class="sidebar-item" data-filter="Health" onclick="setFilter('Health', this)">
+          <span class="list-dot" style="background:#30D158;"></span>
+          Health
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="main-header">
+        <h2 id="list-title">All Reminders</h2>
+        <button class="btn btn-primary btn-sm" onclick="openModal('add-modal')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Reminder
+        </button>
+      </div>
+
+      <div class="reminders-body" id="reminders-body">
+        <!-- Today group -->
+        <div class="reminder-group" data-group="today">
+          <div class="group-header">Today — Apr 8</div>
+          <div class="reminder-item" data-id="1" data-list="Work" data-priority="high" data-date="today" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Review Q2 design mockups</div>
+              <div class="reminder-meta">
+                <span class="tag tag-work">Work</span>
+                <span class="priority-flag high">⚡ High</span>
+                <span class="reminder-date date-today">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Due today
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="reminder-item" data-id="2" data-list="Personal" data-priority="medium" data-date="today" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Call dentist to reschedule</div>
+              <div class="reminder-meta">
+                <span class="tag tag-personal">Personal</span>
+                <span class="priority-flag medium">● Medium</span>
+                <span class="reminder-date date-today">Due today</span>
+              </div>
+            </div>
+          </div>
+          <div class="reminder-item" data-id="3" data-list="Personal" data-priority="low" data-date="today" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Pick up dry cleaning</div>
+              <div class="reminder-meta">
+                <span class="tag tag-personal">Personal</span>
+                <span class="priority-flag low">Low</span>
+                <span class="reminder-date date-today">Due today</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tomorrow group -->
+        <div class="reminder-group" data-group="tomorrow">
+          <div class="group-header">Tomorrow — Apr 9</div>
+          <div class="reminder-item" data-id="4" data-list="Work" data-priority="high" data-date="apr9" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Submit expense report</div>
+              <div class="reminder-meta">
+                <span class="tag tag-work">Work</span>
+                <span class="priority-flag high">⚡ High</span>
+                <span class="reminder-date date-upcoming">Apr 9</span>
+              </div>
+            </div>
+          </div>
+          <div class="reminder-item" data-id="5" data-list="Shopping" data-priority="medium" data-date="apr9" data-flag="true">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Grocery run <span class="flag-icon">🚩</span></div>
+              <div class="reminder-meta">
+                <span class="tag tag-shopping">Shopping</span>
+                <span class="priority-flag medium">● Medium</span>
+                <span class="reminder-date date-upcoming">Apr 9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- This Week group -->
+        <div class="reminder-group" data-group="week">
+          <div class="group-header">This Week</div>
+          <div class="reminder-item" data-id="6" data-list="Work" data-priority="medium" data-date="apr10" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Team standup prep</div>
+              <div class="reminder-meta">
+                <span class="tag tag-work">Work</span>
+                <span class="reminder-date date-upcoming">Apr 10</span>
+              </div>
+            </div>
+          </div>
+          <div class="reminder-item" data-id="7" data-list="Personal" data-priority="low" data-date="apr11" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Read "Hidden Investing" chapter 5</div>
+              <div class="reminder-meta">
+                <span class="tag tag-personal">Personal</span>
+                <span class="reminder-date date-upcoming">Apr 11</span>
+              </div>
+            </div>
+          </div>
+          <div class="reminder-item" data-id="8" data-list="Health" data-priority="medium" data-date="apr12" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Gym</div>
+              <div class="reminder-meta">
+                <span class="tag tag-health">Health</span>
+                <span class="reminder-date date-upcoming">Apr 12</span>
+                <span class="recurring-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                  Daily
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Later group -->
+        <div class="reminder-group" data-group="later">
+          <div class="group-header">Later</div>
+          <div class="reminder-item" data-id="9" data-list="Work" data-priority="high" data-date="apr15" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Budget review meeting</div>
+              <div class="reminder-meta">
+                <span class="tag tag-work">Work</span>
+                <span class="priority-flag high">⚡ High</span>
+                <span class="reminder-date date-upcoming">Apr 15</span>
+              </div>
+            </div>
+          </div>
+          <div class="reminder-item" data-id="10" data-list="Personal" data-priority="medium" data-date="apr20" data-flag="true">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Mom's birthday gift <span class="flag-icon">🚩</span></div>
+              <div class="reminder-meta">
+                <span class="tag tag-personal">Personal</span>
+                <span class="reminder-date date-upcoming">Apr 20</span>
+              </div>
+            </div>
+          </div>
+          <div class="reminder-item" data-id="11" data-list="Work" data-priority="high" data-date="apr20" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Quarterly report</div>
+              <div class="reminder-meta">
+                <span class="tag tag-work">Work</span>
+                <span class="priority-flag high">⚡ High</span>
+                <span class="reminder-date date-upcoming">Apr 20</span>
+              </div>
+            </div>
+          </div>
+          <div class="reminder-item" data-id="12" data-list="Health" data-priority="medium" data-date="apr18" data-flag="false">
+            <div class="reminder-check" onclick="toggleCheck(this)"></div>
+            <div class="reminder-body">
+              <div class="reminder-title">Dentist appointment</div>
+              <div class="reminder-meta">
+                <span class="tag tag-health">Health</span>
+                <span class="reminder-date date-upcoming">Apr 18</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Completed Section -->
+        <div class="completed-section" id="completed-section">
+          <div class="completed-toggle" onclick="toggleCompleted()">
+            <svg id="completed-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+            Completed (<span id="completed-count">0</span>)
+          </div>
+          <div class="completed-list" id="completed-list"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Reminder Modal -->
+  <div class="modal-overlay" id="add-modal">
+    <div class="modal">
+      <h3>New Reminder</h3>
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input class="form-input" type="text" id="new-title" placeholder="Reminder title..." />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="new-notes" placeholder="Add notes..." style="min-height:60px;"></textarea>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">List</label>
+          <select class="form-select" id="new-list">
+            <option value="Personal">Personal</option>
+            <option value="Work">Work</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Health">Health</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-select" id="new-priority">
+            <option value="none">None</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Due Date</label>
+          <input class="form-input" type="date" id="new-date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Repeat</label>
+          <select class="form-select" id="new-repeat">
+            <option value="never">Never</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group flex items-center gap-2">
+        <label class="toggle">
+          <input type="checkbox" id="new-flagged" />
+          <div class="toggle-track"></div>
+        </label>
+        <span style="font-size:13px; color:var(--text-secondary);">Flag this reminder</span>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('add-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="addReminder()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let completedItems = [];
+    let completedOpen = false;
+    let nextId = 13;
+
+    function toggleCheck(checkEl) {
+      const item = checkEl.closest('.reminder-item');
+      checkEl.classList.toggle('checked');
+      if (checkEl.classList.contains('checked')) {
+        item.classList.add('completing');
+        setTimeout(() => {
+          item.classList.add('completed-item');
+          item.classList.remove('completing');
+          moveToCompleted(item);
+        }, 400);
+      }
+    }
+
+    function moveToCompleted(item) {
+      const completedList = document.getElementById('completed-list');
+      const clone = item.cloneNode(true);
+      clone.classList.add('completed-item');
+      const chk = clone.querySelector('.reminder-check');
+      chk.classList.add('checked');
+      chk.onclick = null;
+      completedList.appendChild(clone);
+
+      item.remove();
+      completedItems.push(clone);
+      updateCompletedCount();
+    }
+
+    function updateCompletedCount() {
+      document.getElementById('completed-count').textContent = completedItems.length;
+    }
+
+    function toggleCompleted() {
+      completedOpen = !completedOpen;
+      const list = document.getElementById('completed-list');
+      const arrow = document.getElementById('completed-arrow');
+      list.classList.toggle('open', completedOpen);
+      arrow.style.transform = completedOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+    }
+
+    function setFilter(filter, el) {
+      // Update active state
+      document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+
+      const titleMap = {
+        all: 'All Reminders',
+        today: 'Today',
+        scheduled: 'Scheduled',
+        flagged: 'Flagged',
+        completed: 'Completed',
+        Personal: 'Personal',
+        Work: 'Work',
+        Shopping: 'Shopping',
+        Health: 'Health'
+      };
+      document.getElementById('list-title').textContent = titleMap[filter] || filter;
+
+      const allItems = document.querySelectorAll('.reminder-item');
+      const allGroups = document.querySelectorAll('.reminder-group');
+
+      if (filter === 'all') {
+        allItems.forEach(i => i.style.display = '');
+        allGroups.forEach(g => g.style.display = '');
+        return;
+      }
+
+      if (filter === 'completed') {
+        allItems.forEach(i => i.style.display = 'none');
+        allGroups.forEach(g => g.style.display = 'none');
+        if (!completedOpen) toggleCompleted();
+        return;
+      }
+
+      allGroups.forEach(g => {
+        g.style.display = '';
+      });
+
+      allItems.forEach(item => {
+        let show = false;
+        if (filter === 'today') show = item.dataset.date === 'today';
+        else if (filter === 'scheduled') show = item.dataset.date !== 'today';
+        else if (filter === 'flagged') show = item.dataset.flag === 'true';
+        else show = item.dataset.list === filter;
+        item.style.display = show ? '' : 'none';
+      });
+
+      // Hide empty groups
+      allGroups.forEach(g => {
+        const visible = [...g.querySelectorAll('.reminder-item')].some(i => i.style.display !== 'none');
+        g.style.display = visible ? '' : 'none';
+      });
+    }
+
+    function addReminder() {
+      const title = document.getElementById('new-title').value.trim();
+      if (!title) { showToast('Please enter a title'); return; }
+
+      const list = document.getElementById('new-list').value;
+      const priority = document.getElementById('new-priority').value;
+      const dateVal = document.getElementById('new-date').value;
+      const flagged = document.getElementById('new-flagged').checked;
+      const repeat = document.getElementById('new-repeat').value;
+
+      const priorityHtml = priority !== 'none' ? `<span class="priority-flag ${priority}">${priority === 'high' ? '⚡ High' : priority === 'medium' ? '● Medium' : 'Low'}</span>` : '';
+      const dateHtml = dateVal ? `<span class="reminder-date date-upcoming">${new Date(dateVal+'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'})}</span>` : '';
+      const flagHtml = flagged ? '<span class="flag-icon">🚩</span>' : '';
+      const repeatHtml = repeat !== 'never' ? `<span class="recurring-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>${repeat.charAt(0).toUpperCase()+repeat.slice(1)}</span>` : '';
+
+      const tagClass = `tag-${list.toLowerCase()}`;
+      const html = `
+        <div class="reminder-check" onclick="toggleCheck(this)"></div>
+        <div class="reminder-body">
+          <div class="reminder-title">${title} ${flagHtml}</div>
+          <div class="reminder-meta">
+            <span class="tag ${tagClass}">${list}</span>
+            ${priorityHtml}${dateHtml}${repeatHtml}
+          </div>
+        </div>`;
+
+      const item = document.createElement('div');
+      item.className = 'reminder-item';
+      item.dataset.id = nextId++;
+      item.dataset.list = list;
+      item.dataset.priority = priority;
+      item.dataset.date = dateVal ? 'apr-custom' : '';
+      item.dataset.flag = flagged ? 'true' : 'false';
+      item.innerHTML = html;
+
+      // Append to later group or create new group
+      let laterGroup = document.querySelector('[data-group="later"]');
+      if (!laterGroup) {
+        laterGroup = document.createElement('div');
+        laterGroup.className = 'reminder-group';
+        laterGroup.dataset.group = 'later';
+        laterGroup.innerHTML = '<div class="group-header">Added</div>';
+        document.getElementById('reminders-body').insertBefore(laterGroup, document.getElementById('completed-section'));
+      }
+      laterGroup.appendChild(item);
+
+      closeModal('add-modal');
+      showToast(`Reminder added to ${list}`);
+
+      // Reset
+      document.getElementById('new-title').value = '';
+      document.getElementById('new-notes').value = '';
+      document.getElementById('new-date').value = '';
+      document.getElementById('new-flagged').checked = false;
+    }
+  </script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

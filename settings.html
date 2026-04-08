@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — mCloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Settings — Comprehensive Layout & Component Styles ── */
+
+    /* Settings uses a scrollable single-column layout */
+    body.app-page {
+      overflow: auto;
+    }
+
+    .settings-shell {
+      min-height: calc(100vh - var(--topbar-h));
+      padding: var(--topbar-h) 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--bg-secondary);
+      transition: background var(--transition-slow);
+    }
+
+    .settings-content {
+      width: 100%;
+      max-width: 680px;
+      padding: 28px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ——— Profile card ——— */
+    .profile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      box-shadow: var(--shadow-sm);
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-light) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      letter-spacing: -1px;
+      box-shadow: 0 4px 16px rgba(108,71,255,0.3);
+    }
+
+    .profile-info { flex: 1; min-width: 0; }
+
+    .profile-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      outline: none;
+      border-bottom: 2px solid transparent;
+      transition: border-color 0.15s;
+      display: inline-block;
+      min-width: 60px;
+      max-width: 100%;
+    }
+    .profile-name:focus { border-bottom-color: var(--color-accent); }
+
+    .profile-email {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    .edit-hint {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+    }
+
+    /* ——— Settings cards ——— */
+    .settings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+
+    .settings-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      padding: 16px 20px 8px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-color);
+      transition: background var(--transition);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row:hover { background: var(--bg-secondary); }
+    .settings-row.no-hover:hover { background: transparent; }
+
+    .settings-row-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .settings-row-label {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .settings-row-sublabel {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    .settings-row-value {
+      font-size: 13px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .settings-link {
+      font-size: 13px;
+      color: var(--color-accent);
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .settings-link:hover { text-decoration: underline; }
+    .settings-link.danger { color: var(--red); }
+
+    /* ——— Status dots (standalone, not nested in sidebar-item) ——— */
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    .dot-green {
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(52,199,89,0.2);
+    }
+    .dot-gray {
+      background: var(--gray-dot);
+    }
+
+    /* ——— Storage bar ——— */
+    .storage-bar-track {
+      height: 6px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin: 10px 0 6px;
+    }
+    .storage-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-accent), var(--color-accent-light));
+      border-radius: var(--radius-full);
+      transition: width 0.6s ease;
+    }
+    .storage-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .storage-used { font-weight: 600; color: var(--text-primary); }
+
+    /* ——— Breakdown bars ——— */
+    .breakdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .breakdown-item:last-child { margin-bottom: 0; }
+
+    .breakdown-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    .breakdown-bar-track {
+      flex: 1;
+      height: 8px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    [data-theme="dark"] .breakdown-bar-track { background: rgba(255,255,255,0.08); }
+
+    .breakdown-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 0.6s ease;
+    }
+
+    .breakdown-size {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      width: 45px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ——— Checkbox rows (Apps Using mCloud grid) ——— */
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .checkbox-row:last-child { border-bottom: none; }
+    .checkbox-row:hover { background: var(--bg-secondary); }
+
+    .app-checkbox {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--color-accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    .checkbox-row-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    /* ——— Device rows ——— */
+    .device-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-color);
+      transition: background var(--transition);
+    }
+    .device-row:last-child { border-bottom: none; }
+    .device-row:hover { background: var(--bg-secondary); }
+
+    .device-row-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: background var(--transition-slow);
+    }
+    [data-theme="dark"] .device-row-icon { background: rgba(255,255,255,0.06); }
+
+    .device-row-info { flex: 1; min-width: 0; }
+    .device-row-name  { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    .device-row-date  { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+
+    /* ——— Appearance: theme selector ——— */
+    .theme-radio-group {
+      display: flex;
+      gap: 10px;
+      padding: 14px 20px;
+    }
+    .theme-radio-option {
+      flex: 1;
+      position: relative;
+    }
+    .theme-radio-option input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .theme-radio-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 10px;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .theme-radio-label:hover { border-color: var(--text-tertiary); }
+    .theme-radio-option input:checked + .theme-radio-label {
+      border-color: var(--color-accent);
+      background: var(--color-accent-bg);
+    }
+    [data-theme="dark"] .theme-radio-option input:checked + .theme-radio-label {
+      background: rgba(108,71,255,0.15);
+    }
+
+    .theme-preview {
+      width: 100%;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+    .theme-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .theme-radio-option input:checked + .theme-radio-label .theme-name {
+      color: var(--color-accent);
+    }
+
+    /* ——— Accent color swatches ——— */
+    .accent-swatches {
+      display: flex;
+      gap: 10px;
+      padding: 0 0 14px;
+    }
+
+    .accent-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid transparent;
+      outline: 3px solid transparent;
+      transition: transform 0.15s, outline-color 0.15s;
+      position: relative;
+    }
+    .accent-swatch:hover { transform: scale(1.18); }
+    .accent-swatch.selected {
+      outline-color: var(--text-primary);
+      outline-offset: 2px;
+    }
+    .accent-swatch.selected::after {
+      content: '✓';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="app-page">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="dashboard.html" class="nav-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        mCloud
+      </a>
+    </div>
+    <div class="topbar-center">Settings</div>
+    <div class="topbar-right">
+      <button class="nav-btn" data-theme-toggle title="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="settings-shell">
+    <div class="settings-content">
+
+      <!-- ── Profile Card ── -->
+      <div class="profile-card">
+        <div class="profile-avatar">M</div>
+        <div class="profile-info">
+          <div class="profile-name" contenteditable="true" id="profile-name" spellcheck="false">Mosiur</div>
+          <div class="profile-email">mosiur@mcloud.mosiur.com</div>
+          <div class="edit-hint">Click name to edit</div>
+        </div>
+        <button class="btn btn-ghost btn-sm">Manage Account</button>
+      </div>
+
+      <!-- ── mCloud+ Subscription ── -->
+      <div class="settings-card">
+        <div class="settings-card-title">mCloud+ Subscription</div>
+        <div class="settings-row no-hover" style="flex-direction:column; align-items:flex-start; gap:4px; padding:14px 20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+            <div>
+              <div style="font-size:15px; font-weight:600; color:var(--text-primary);">Free Plan</div>
+              <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">50 GB Storage included</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px; font-weight:700; color:var(--color-accent);">4.2 GB used</div>
+              <div style="font-size:11px; color:var(--text-tertiary);">of 50 GB</div>
+            </div>
+          </div>
+          <div class="storage-bar-track" style="width:100%;">
+            <div class="storage-bar-fill" style="width:8.4%;"></div>
+          </div>
+          <div class="storage-labels" style="width:100%;">
+            <span class="storage-used">4.2 GB used</span>
+            <span>45.8 GB available</span>
+          </div>
+        </div>
+        <div class="settings-row no-hover" style="padding:14px 20px;">
+          <button class="btn btn-primary" style="width:100%;" onclick="showToast('Redirecting to upgrade page...')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            Upgrade to mCloud+ — 200 GB
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Devices ── -->
+      <div class="settings-card">
+        <div class="settings-card-title">Devices</div>
+        <div class="device-row">
+          <div class="device-row-icon">📱</div>
+          <div class="device-row-info">
+            <div class="device-row-name">Mosiur's iPhone 16 Pro</div>
+            <div class="device-row-date">Last active: Today, 1:42 AM</div>
+          </div>
+          <div class="dot dot-green" title="Online"></div>
+        </div>
+        <div class="device-row">
+          <div class="device-row-icon">💻</div>
+          <div class="device-row-info">
+            <div class="device-row-name">Mosiur's MacBook Pro</div>
+            <div class="device-row-date">Last active: Today, 12:30 AM</div>
+          </div>
+          <div class="dot dot-green" title="Online"></div>
+        </div>
+        <div class="device-row">
+          <div class="device-row-icon">🖥️</div>
+          <div class="device-row-info">
+            <div class="device-row-name">Mosiur's iPad Air</div>
+            <div class="device-row-date">Last active: Yesterday, 8:14 PM</div>
+          </div>
+          <div class="dot dot-gray" title="Offline"></div>
+        </div>
+        <div class="device-row">
+          <div class="device-row-icon">🎧</div>
+          <div class="device-row-info">
+            <div class="device-row-name">Mosiur's AirPods Pro</div>
+            <div class="device-row-date">Last active: Yesterday, 6:00 PM</div>
+          </div>
+          <div class="dot dot-gray" title="Offline"></div>
+        </div>
+      </div>
+
+      <!-- ── Privacy & Security ── -->
+      <div class="settings-card">
+        <div class="settings-card-title">Privacy &amp; Security</div>
+        <div class="settings-row">
+          <div class="settings-row-icon" style="background:#E8FFE8;">🔐</div>
+          <div style="flex:1;">
+            <div class="settings-row-label">Two-Factor Authentication</div>
+            <div class="settings-row-sublabel">Adds an extra layer of security</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" checked onchange="showToast(this.checked ? '2FA enabled' : '2FA disabled')" />
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+        <div class="settings-row" onclick="showToast('Opening App-Specific Passwords...')" style="cursor:pointer;">
+          <div class="settings-row-icon" style="background:#E8F4FF;">🔑</div>
+          <div style="flex:1;">
+            <div class="settings-row-label">App-Specific Passwords</div>
+            <div class="settings-row-sublabel">For apps that don't support mCloud sign-in</div>
+          </div>
+          <a class="settings-link">Manage</a>
+        </div>
+        <div class="settings-row" onclick="showToast('Loading sign-in activity...')" style="cursor:pointer;">
+          <div class="settings-row-icon" style="background:#FFF0F0;">📋</div>
+          <div style="flex:1;">
+            <div class="settings-row-label">Sign-In Activity</div>
+            <div class="settings-row-sublabel">See recent logins and devices</div>
+          </div>
+          <a class="settings-link">View Activity</a>
+        </div>
+      </div>
+
+      <!-- ── Apps Using mCloud ── -->
+      <div class="settings-card">
+        <div class="settings-card-title">Apps Using mCloud</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; padding:4px 0;">
+          <label class="checkbox-row">
+            <input type="checkbox" class="app-checkbox" checked />
+            <span class="checkbox-row-icon">📧</span>
+            <span class="checkbox-label">Mail</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" class="app-checkbox" checked />
+            <span class="checkbox-row-icon">📁</span>
+            <span class="checkbox-label">Drive</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" class="app-checkbox" checked />
+            <span class="checkbox-row-icon">🖼️</span>
+            <span class="checkbox-label">Photos</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" class="app-checkbox" checked />
+            <span class="checkbox-row-icon">📝</span>
+            <span class="checkbox-label">Notes</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" class="app-checkbox" checked />
+            <span class="checkbox-row-icon">📅</span>
+            <span class="checkbox-label">Calendar</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" class="app-checkbox" checked />
+            <span class="checkbox-row-icon">👥</span>
+            <span class="checkbox-label">Contacts</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" class="app-checkbox" checked />
+            <span class="checkbox-row-icon">⏰</span>
+            <span class="checkbox-label">Reminders</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" class="app-checkbox" checked />
+            <span class="checkbox-row-icon">📍</span>
+            <span class="checkbox-label">Find My</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- ── Data & Storage ── -->
+      <div class="settings-card">
+        <div class="settings-card-title">Data &amp; Storage</div>
+        <div class="settings-row no-hover" style="flex-direction:column; align-items:stretch; gap:10px; padding:14px 20px;">
+          <div class="breakdown-item">
+            <span class="breakdown-label">Photos</span>
+            <div class="breakdown-bar-track">
+              <div class="breakdown-bar-fill" style="width:50%; background: var(--color-accent);"></div>
+            </div>
+            <span class="breakdown-size">2.1 GB</span>
+          </div>
+          <div class="breakdown-item">
+            <span class="breakdown-label">Drive</span>
+            <div class="breakdown-bar-track">
+              <div class="breakdown-bar-fill" style="width:33%; background: var(--blue);"></div>
+            </div>
+            <span class="breakdown-size">1.4 GB</span>
+          </div>
+          <div class="breakdown-item">
+            <span class="breakdown-label">Mail</span>
+            <div class="breakdown-bar-track">
+              <div class="breakdown-bar-fill" style="width:17%; background: var(--orange);"></div>
+            </div>
+            <span class="breakdown-size">0.7 GB</span>
+          </div>
+        </div>
+        <div class="settings-row" onclick="showToast('Opening storage manager...')" style="cursor:pointer;">
+          <div style="flex:1; font-size:14px; font-weight:500; color:var(--text-primary);">Manage Storage</div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="settings-row" onclick="showToast('Preparing data download...')" style="cursor:pointer;">
+          <div style="flex:1; font-size:14px; font-weight:500; color:var(--text-primary);">Download Your Data</div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="settings-row" onclick="openModal('delete-modal')" style="cursor:pointer;">
+          <div style="flex:1; font-size:14px; font-weight:500; color:var(--red);">Delete Account</div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      <!-- ── Appearance ── -->
+      <div class="settings-card">
+        <div class="settings-card-title">Appearance</div>
+        <div style="padding: 8px 20px 4px;">
+          <div style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px;">Theme</div>
+        </div>
+        <div class="theme-radio-group">
+          <div class="theme-radio-option">
+            <input type="radio" name="theme-radio" id="theme-system" value="light" />
+            <label class="theme-radio-label" for="theme-system">
+              <div class="theme-preview" style="background:linear-gradient(135deg, #fff 50%, #1c1c1e 50%);"></div>
+              <span class="theme-name">System</span>
+            </label>
+          </div>
+          <div class="theme-radio-option">
+            <input type="radio" name="theme-radio" id="theme-light" value="light" checked />
+            <label class="theme-radio-label" for="theme-light">
+              <div class="theme-preview" style="background:#FFFFFF; border:1px solid #e0e0e5;"></div>
+              <span class="theme-name">Light</span>
+            </label>
+          </div>
+          <div class="theme-radio-option">
+            <input type="radio" name="theme-radio" id="theme-dark" value="dark" />
+            <label class="theme-radio-label" for="theme-dark">
+              <div class="theme-preview" style="background:#1C1C1E;"></div>
+              <span class="theme-name">Dark</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="padding: 4px 20px 8px;">
+          <div style="font-size:12px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px;">Accent Color</div>
+          <div class="accent-swatches">
+            <div class="accent-swatch selected" style="background:#6C47FF;" data-color="#6C47FF" data-dark="#9B7FFF" onclick="setAccent(this)"></div>
+            <div class="accent-swatch" style="background:#007AFF;" data-color="#007AFF" data-dark="#4DA6FF" onclick="setAccent(this)"></div>
+            <div class="accent-swatch" style="background:#30D158;" data-color="#30D158" data-dark="#34C759" onclick="setAccent(this)"></div>
+            <div class="accent-swatch" style="background:#FF375F;" data-color="#FF375F" data-dark="#FF6B82" onclick="setAccent(this)"></div>
+            <div class="accent-swatch" style="background:#FF9500;" data-color="#FF9500" data-dark="#FFB340" onclick="setAccent(this)"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Delete Account Modal -->
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+      <h3 style="color:var(--red);">⚠ Delete Account?</h3>
+      <p style="font-size:14px; color:var(--text-secondary); line-height:1.6;">This will permanently delete your mCloud account and all associated data including files, photos, emails, and settings. <strong>This cannot be undone.</strong></p>
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Type "DELETE" to confirm</label>
+        <input class="form-input" type="text" placeholder="DELETE" id="delete-confirm" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('delete-modal')">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">Delete My Account</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Theme radio buttons
+    document.querySelectorAll('input[name="theme-radio"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const theme = radio.value;
+        document.documentElement.setAttribute('data-theme', theme);
+        window.__mCloudTheme = theme;
+        document.querySelectorAll('[data-theme-toggle]').forEach(btn => updateToggleIcon(btn, theme));
+      });
+    });
+
+    // Sync on load
+    document.addEventListener('DOMContentLoaded', () => {
+      const stored = (window.__mCloudTheme || 'light');
+      const radio = document.querySelector(`input[name="theme-radio"][value="${stored}"]`);
+      if (radio) radio.checked = true;
+    });
+
+    // Accent swatches
+    function setAccent(el) {
+      document.querySelectorAll('.accent-swatch').forEach(s => s.classList.remove('selected'));
+      el.classList.add('selected');
+      const color = el.dataset.color;
+      const darkColor = el.dataset.dark;
+      const root = document.documentElement;
+      root.style.setProperty('--color-accent', color);
+      root.style.setProperty('--color-accent-light', darkColor);
+      // Generate a light bg
+      showToast('Accent color updated');
+    }
+
+    // Profile name edit
+    const nameEl = document.getElementById('profile-name');
+    nameEl.addEventListener('blur', () => {
+      if (!nameEl.textContent.trim()) nameEl.textContent = 'Mosiur';
+      showToast(`Name updated to "${nameEl.textContent.trim()}"`);
+    });
+    nameEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+    });
+
+    function confirmDelete() {
+      const val = document.getElementById('delete-confirm').value;
+      if (val === 'DELETE') {
+        closeModal('delete-modal');
+        showToast('Account deletion request submitted');
+      } else {
+        showToast('Please type DELETE to confirm');
+      }
+    }
+  </script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mail — mCloud</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Mail-specific overrides & additions ──────────────────────────── */
+
+    /* Override app-sidebar to 220px for mail */
+    .mail-layout .app-sidebar {
+      width: 220px;
+      min-width: 220px;
+    }
+
+    /* Override app-content to not scroll so panes can manage their own scroll */
+    .mail-layout {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100dvh - 48px);
+    }
+
+    /* ── Sidebar label dots ───────────────────────────────────────────── */
+    .label-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+
+    /* ── Email list pane ──────────────────────────────────────────────── */
+    .mail-list-pane {
+      width: 360px;
+      min-width: 360px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--color-divider);
+      background: var(--color-bg);
+      overflow: hidden;
+    }
+
+    .mail-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--color-divider);
+      background: var(--color-surface);
+      flex-shrink: 0;
+    }
+
+    .mail-list-header h2 {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+    }
+
+    .mail-list-header-actions {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    .mail-list-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-3);
+    }
+
+    /* ── Email items ──────────────────────────────────────────────────── */
+    .email-item {
+      background: var(--color-surface);
+      padding: var(--space-4) var(--space-4);
+      border-radius: var(--radius-md);
+      margin-bottom: 3px;
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: var(--space-3);
+      align-items: start;
+      cursor: pointer;
+      transition: background var(--transition), box-shadow var(--transition), border-color var(--transition);
+      border: 1px solid var(--color-divider);
+      border-left: 3px solid transparent;
+      position: relative;
+    }
+
+    .email-item:hover {
+      background: rgba(108,71,255,0.04);
+      border-color: rgba(108,71,255,0.15);
+    }
+
+    .email-item.unread {
+      border-left-color: var(--color-accent);
+    }
+
+    .email-item.unread .email-sender {
+      font-weight: 700;
+      color: var(--color-text);
+    }
+
+    .email-item.unread .email-subject {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    .email-item.selected {
+      background: rgba(108,71,255,0.08);
+      border-color: var(--color-accent);
+      border-left-color: var(--color-accent);
+    }
+
+    [data-theme='dark'] .email-item.selected {
+      background: rgba(155,127,255,0.12);
+      border-color: var(--color-accent);
+    }
+
+    .email-item-body {
+      min-width: 0;
+    }
+
+    .email-item-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-2);
+      margin-bottom: 2px;
+    }
+
+    .email-sender {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .email-time {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .email-subject {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 400;
+    }
+
+    .email-preview {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .email-item-footer {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: 5px;
+    }
+
+    /* Unread dot */
+    .unread-dot {
+      position: absolute;
+      top: 14px;
+      right: 10px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      flex-shrink: 0;
+    }
+
+    .email-item:not(.unread) .unread-dot {
+      display: none;
+    }
+
+    /* ── Reading pane ─────────────────────────────────────────────────── */
+    .mail-read-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--color-bg);
+    }
+
+    /* Empty state */
+    .read-empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-5);
+      text-align: center;
+      color: var(--color-text-muted);
+      padding: var(--space-12);
+    }
+
+    .read-empty-state svg {
+      opacity: 0.2;
+    }
+
+    .read-empty-state h3 {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 4px;
+    }
+
+    .read-empty-state p {
+      font-size: var(--text-sm);
+      max-width: 280px;
+      color: var(--color-text-muted);
+    }
+
+    /* Email reading content */
+    .read-email-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-8) var(--space-10);
+      display: none;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    .read-email-content.visible {
+      display: flex;
+    }
+
+    .read-email-header {
+      border-bottom: 1px solid var(--color-divider);
+      padding-bottom: var(--space-6);
+    }
+
+    .read-email-subject-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .read-email-subject {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: var(--color-text);
+      flex: 1;
+    }
+
+    .read-email-date-badge {
+      font-size: var(--text-xs);
+      color: var(--color-text-faint);
+      white-space: nowrap;
+      padding-top: 6px;
+    }
+
+    .read-sender-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .read-sender-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .read-sender-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .read-sender-name {
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .read-sender-meta {
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    /* Email body */
+    .read-email-body {
+      font-size: var(--text-sm);
+      line-height: 1.75;
+      color: var(--color-text);
+    }
+
+    .read-email-body p {
+      margin-bottom: var(--space-4);
+    }
+
+    .read-email-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Action buttons */
+    .read-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-5) var(--space-10);
+      border-top: 1px solid var(--color-divider);
+      background: var(--color-surface);
+      flex-shrink: 0;
+    }
+
+    .read-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text-muted);
+      background: transparent;
+      border: 1.5px solid var(--color-border);
+      transition: all var(--transition);
+    }
+
+    .read-action-btn:hover {
+      background: var(--color-surface-2);
+      color: var(--color-text);
+      border-color: var(--color-text-faint);
+    }
+
+    .read-action-btn.accent {
+      background: var(--color-accent);
+      color: white;
+      border-color: var(--color-accent);
+    }
+
+    .read-action-btn.accent:hover {
+      background: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+    }
+
+    .read-action-btn.danger:hover {
+      background: rgba(255,59,48,0.08);
+      color: var(--color-error);
+      border-color: rgba(255,59,48,0.3);
+    }
+
+    .read-actions-spacer { flex: 1; }
+
+    /* ── Compose modal ────────────────────────────────────────────────── */
+    .compose-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: var(--space-5);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .compose-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .compose-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      cursor: pointer;
+    }
+
+    .compose-panel {
+      position: relative;
+      z-index: 1;
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--color-border);
+      width: 540px;
+      max-width: calc(100vw - 40px);
+      max-height: 80dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: translateY(24px) scale(0.97);
+      transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease;
+      opacity: 0;
+    }
+
+    .compose-overlay.open .compose-panel {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    .compose-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-5);
+      background: var(--color-surface-2);
+      border-bottom: 1px solid var(--color-divider);
+      flex-shrink: 0;
+    }
+
+    .compose-header-title {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .compose-header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .compose-close-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-full);
+      color: var(--color-text-muted);
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .compose-close-btn:hover {
+      background: var(--color-border);
+      color: var(--color-text);
+    }
+
+    .compose-fields {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .compose-field {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-5);
+      border-bottom: 1px solid var(--color-divider);
+    }
+
+    .compose-field-label {
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      font-weight: 500;
+      width: 54px;
+      flex-shrink: 0;
+    }
+
+    .compose-field-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: var(--text-sm);
+      color: var(--color-text);
+      background: transparent;
+      font-family: var(--font-body);
+    }
+
+    .compose-field-input::placeholder {
+      color: var(--color-text-faint);
+    }
+
+    .compose-body-field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-4) var(--space-5);
+      min-height: 220px;
+    }
+
+    .compose-textarea {
+      flex: 1;
+      border: none;
+      outline: none;
+      resize: none;
+      font-size: var(--text-sm);
+      line-height: 1.7;
+      color: var(--color-text);
+      background: transparent;
+      font-family: var(--font-body);
+      min-height: 200px;
+    }
+
+    .compose-textarea::placeholder {
+      color: var(--color-text-faint);
+    }
+
+    .compose-footer {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-5);
+      border-top: 1px solid var(--color-divider);
+      background: var(--color-surface-2);
+      flex-shrink: 0;
+    }
+
+    .compose-footer-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .compose-attach-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      color: var(--color-text-muted);
+      transition: background var(--transition), color var(--transition);
+    }
+
+    .compose-attach-btn:hover {
+      background: var(--color-surface-2);
+      color: var(--color-text);
+    }
+
+    .compose-discard-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--color-text-muted);
+      border: 1.5px solid var(--color-border);
+      background: transparent;
+      transition: all var(--transition);
+    }
+
+    .compose-discard-btn:hover {
+      background: rgba(255,59,48,0.06);
+      color: var(--color-error);
+      border-color: rgba(255,59,48,0.3);
+    }
+
+    .compose-send-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-5);
+      border-radius: var(--radius-full);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: white;
+      background: var(--color-accent);
+      border: none;
+      transition: background var(--transition), transform var(--transition-spring), box-shadow var(--transition);
+    }
+
+    .compose-send-btn:hover {
+      background: var(--color-accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(108,71,255,0.35);
+    }
+
+    .compose-send-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* ── Toast ────────────────────────────────────────────────────────── */
+    .toast-container {
+      position: fixed;
+      bottom: var(--space-6);
+      right: var(--space-6);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      pointer-events: none;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-5);
+      background: var(--color-text);
+      color: var(--color-bg);
+      border-radius: var(--radius-full);
+      font-size: var(--text-sm);
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      animation: toast-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      white-space: nowrap;
+    }
+
+    .toast.fade-out {
+      animation: toast-out 0.25s ease forwards;
+    }
+
+    .toast-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    @keyframes toast-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.92);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes toast-out {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.95);
+      }
+    }
+
+    /* ── Sidebar icons overrides ──────────────────────────────────────── */
+    .sidebar-icon-wrap {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body class="app-page">
+
+  <!-- ── Top Bar ───────────────────────────────────────────────────────── -->
+  <header class="app-topbar">
+    <a href="dashboard.html" class="topbar-back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+      mCloud
+    </a>
+    <div class="topbar-title">Mail</div>
+    <div class="topbar-actions">
+      <button class="nav-btn" id="themeToggleBtn" aria-label="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="composeBtn" title="Compose new message" aria-label="Compose">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main Content ──────────────────────────────────────────────────── -->
+  <div class="app-content">
+    <div class="mail-layout">
+
+      <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+      <aside class="app-sidebar" style="width:220px; min-width:220px;">
+
+        <!-- Mailboxes -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Mailboxes</div>
+
+          <a class="sidebar-item active" href="#" data-folder="inbox">
+            <span class="sidebar-icon-wrap" style="background:linear-gradient(135deg,#5AC8FA,#007AFF); color:white;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M22 12h-6l-2 3h-4l-2-3H2"/>
+                <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+              </svg>
+            </span>
+            Inbox
+            <span class="sidebar-badge" id="inboxBadge">3</span>
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="favourites">
+            <span class="sidebar-icon-wrap" style="background:linear-gradient(135deg,#FFD60A,#FF9F0A); color:white;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </span>
+            Favourites
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="snoozed">
+            <span class="sidebar-icon-wrap" style="background:linear-gradient(135deg,#BF5AF2,#9B30D9); color:white;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+            </span>
+            Snoozed
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="sent">
+            <span class="sidebar-icon-wrap" style="background:linear-gradient(135deg,#30D158,#229944); color:white;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </span>
+            Sent
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="drafts">
+            <span class="sidebar-icon-wrap" style="background:linear-gradient(135deg,#FF9F0A,#FF6B0A); color:white;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </span>
+            Drafts
+            <span class="sidebar-badge">1</span>
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="trash">
+            <span class="sidebar-icon-wrap" style="background:linear-gradient(135deg,#8E8E93,#636366); color:white;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </span>
+            Trash
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="junk">
+            <span class="sidebar-icon-wrap" style="background:linear-gradient(135deg,#FF453A,#CC1A10); color:white;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </span>
+            Junk
+          </a>
+        </div>
+
+        <!-- Folders -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Folders</div>
+
+          <a class="sidebar-item" href="#" data-folder="work">
+            <span class="sidebar-icon-wrap" style="background:rgba(108,71,255,0.12); color:var(--color-accent);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+            </span>
+            Work
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="personal">
+            <span class="sidebar-icon-wrap" style="background:rgba(52,199,89,0.12); color:var(--color-success);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            Personal
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="newsletters">
+            <span class="sidebar-icon-wrap" style="background:rgba(0,122,255,0.10); color:#007AFF;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </span>
+            Newsletters
+          </a>
+        </div>
+
+        <!-- Labels -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Labels</div>
+
+          <a class="sidebar-item" href="#" data-folder="label-urgent">
+            <span class="label-dot" style="background:#FF3B30; margin-left:4px; margin-right:2px;"></span>
+            Urgent
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="label-finance">
+            <span class="label-dot" style="background:#34C759; margin-left:4px; margin-right:2px;"></span>
+            Finance
+          </a>
+
+          <a class="sidebar-item" href="#" data-folder="label-social">
+            <span class="label-dot" style="background:#007AFF; margin-left:4px; margin-right:2px;"></span>
+            Social
+          </a>
+        </div>
+
+      </aside>
+
+      <!-- ── Email List Pane ─────────────────────────────────────────── -->
+      <div class="mail-list-pane">
+        <div class="mail-list-header">
+          <h2>Inbox</h2>
+          <div class="mail-list-header-actions">
+            <button class="icon-btn" title="Filter messages" style="width:28px; height:28px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+            </button>
+            <button class="icon-btn" title="Sort messages" style="width:28px; height:28px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="mail-list-scroll">
+
+          <!-- Email 1: mCloud Team -->
+          <div class="email-item unread" data-email-id="1" tabindex="0" role="button" aria-label="Email from mCloud Team">
+            <div class="email-avatar" style="background:linear-gradient(135deg,#FF6B6B,#FF3B30); width:36px; height:36px; font-size:14px; font-weight:700;">A</div>
+            <div class="email-item-body">
+              <div class="email-item-top">
+                <span class="email-sender">mCloud Team</span>
+                <span class="email-time">9:42 AM</span>
+              </div>
+              <div class="email-subject">Your mCloud storage is almost full</div>
+              <div class="email-preview">Upgrade your mCloud+ plan to get more storage and premium features...</div>
+              <div class="email-item-footer">
+                <span class="tag tag-red">mCloud</span>
+              </div>
+            </div>
+            <span class="unread-dot"></span>
+          </div>
+
+          <!-- Email 2: Sarah Johnson -->
+          <div class="email-item unread" data-email-id="2" tabindex="0" role="button" aria-label="Email from Sarah Johnson">
+            <div class="email-avatar" style="background:linear-gradient(135deg,#30D158,#229944); width:36px; height:36px; font-size:14px; font-weight:700;">S</div>
+            <div class="email-item-body">
+              <div class="email-item-top">
+                <span class="email-sender">Sarah Johnson</span>
+                <span class="email-time">8:15 AM</span>
+              </div>
+              <div class="email-subject">Re: Project Update — Q2 Goals</div>
+              <div class="email-preview">Thanks for the summary! Let's sync on Friday...</div>
+            </div>
+            <span class="unread-dot"></span>
+          </div>
+
+          <!-- Email 3: Design Weekly -->
+          <div class="email-item unread" data-email-id="3" tabindex="0" role="button" aria-label="Email from Newsletter — Design Weekly">
+            <div class="email-avatar" style="background:linear-gradient(135deg,#BF5AF2,#9B30D9); width:36px; height:36px; font-size:14px; font-weight:700;">N</div>
+            <div class="email-item-body">
+              <div class="email-item-top">
+                <span class="email-sender">Newsletter — Design Weekly</span>
+                <span class="email-time">7:00 AM</span>
+              </div>
+              <div class="email-subject">10 Typography Trends Shaping 2026</div>
+              <div class="email-preview">Variable fonts go mainstream, the return of humanist type...</div>
+              <div class="email-item-footer">
+                <span class="tag tag-purple">Newsletter</span>
+              </div>
+            </div>
+            <span class="unread-dot"></span>
+          </div>
+
+          <!-- Email 4: Mike Chen -->
+          <div class="email-item" data-email-id="4" tabindex="0" role="button" aria-label="Email from Mike Chen">
+            <div class="email-avatar" style="background:linear-gradient(135deg,#5AC8FA,#007AFF); width:36px; height:36px; font-size:14px; font-weight:700;">M</div>
+            <div class="email-item-body">
+              <div class="email-item-top">
+                <span class="email-sender">Mike Chen</span>
+                <span class="email-time">Yesterday</span>
+              </div>
+              <div class="email-subject">Weekend hiking plans?</div>
+              <div class="email-preview">We're planning a trail run Saturday. Weather looks perfect...</div>
+            </div>
+          </div>
+
+          <!-- Email 5: Tanvir Ahmed -->
+          <div class="email-item" data-email-id="5" tabindex="0" role="button" aria-label="Email from Tanvir Ahmed">
+            <div class="email-avatar" style="background:linear-gradient(135deg,#FFD60A,#FF9F0A); width:36px; height:36px; font-size:14px; font-weight:700;">T</div>
+            <div class="email-item-body">
+              <div class="email-item-top">
+                <span class="email-sender">Tanvir Ahmed</span>
+                <span class="email-time">Apr 6</span>
+              </div>
+              <div class="email-subject">Invoice #INV-2026-041</div>
+              <div class="email-preview">Payment due April 30. Please review the attached invoice...</div>
+              <div class="email-item-footer">
+                <span class="tag tag-green">Finance</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Email 6: Zoom -->
+          <div class="email-item" data-email-id="6" tabindex="0" role="button" aria-label="Email from Zoom">
+            <div class="email-avatar" style="background:linear-gradient(135deg,#8E8E93,#636366); width:36px; height:36px; font-size:14px; font-weight:700;">Z</div>
+            <div class="email-item-body">
+              <div class="email-item-top">
+                <span class="email-sender">Zoom</span>
+                <span class="email-time">Apr 5</span>
+              </div>
+              <div class="email-subject">Meeting recording ready</div>
+              <div class="email-preview">Your April 5 meeting "Design Review" has been processed...</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Reading Pane ────────────────────────────────────────────── -->
+      <div class="mail-read-pane" id="readPane">
+
+        <!-- Empty state (default) -->
+        <div class="read-empty-state" id="readEmptyState">
+          <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="24" width="80" height="56" rx="8" stroke="currentColor" stroke-width="3" fill="none"/>
+            <path d="M8 32l40 28 40-28" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M8 24l40 32 40-32" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.3" fill="none"/>
+            <circle cx="48" cy="48" r="18" stroke="currentColor" stroke-width="2" opacity="0.08" fill="none"/>
+            <circle cx="48" cy="48" r="32" stroke="currentColor" stroke-width="1.5" opacity="0.05" fill="none"/>
+          </svg>
+          <div>
+            <h3>Select a message</h3>
+            <p>Choose an email from your inbox to read it here.</p>
+          </div>
+        </div>
+
+        <!-- Email reading content (hidden initially) -->
+        <div class="read-email-content" id="readEmailContent">
+
+          <div class="read-email-header">
+            <div class="read-email-subject-row">
+              <div class="read-email-subject" id="readSubject">—</div>
+              <div class="read-email-date-badge" id="readDate">—</div>
+            </div>
+            <div class="read-sender-row">
+              <div class="read-sender-avatar" id="readAvatar"></div>
+              <div class="read-sender-info">
+                <div class="read-sender-name" id="readSenderName">—</div>
+                <div class="read-sender-meta" id="readSenderMeta">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="read-email-body" id="readBody"></div>
+
+        </div>
+
+        <!-- Action buttons (shown when email selected) -->
+        <div class="read-actions" id="readActions" style="display:none;">
+          <button class="read-action-btn accent" id="btnReply">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 17 4 12 9 7"/>
+              <path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
+            </svg>
+            Reply
+          </button>
+          <button class="read-action-btn" id="btnReplyAll">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="7 17 2 12 7 7"/>
+              <polyline points="12 17 7 12 12 7"/>
+              <path d="M22 18v-2a4 4 0 0 0-4-4H7"/>
+            </svg>
+            Reply All
+          </button>
+          <button class="read-action-btn" id="btnForward">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 17 20 12 15 7"/>
+              <path d="M4 18v-2a4 4 0 0 1 4-4h12"/>
+            </svg>
+            Forward
+          </button>
+          <div class="read-actions-spacer"></div>
+          <button class="read-action-btn" id="btnArchive">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="21 8 21 21 3 21 3 8"/>
+              <rect x="1" y="3" width="22" height="5"/>
+              <line x1="10" y1="12" x2="14" y2="12"/>
+            </svg>
+            Archive
+          </button>
+          <button class="read-action-btn danger" id="btnDelete">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+
+      </div>
+
+    </div><!-- /.mail-layout -->
+  </div><!-- /.app-content -->
+
+  <!-- ── Compose Modal ──────────────────────────────────────────────────── -->
+  <div class="compose-overlay" id="composeOverlay" role="dialog" aria-modal="true" aria-label="Compose new message">
+    <div class="compose-backdrop" id="composeBackdrop"></div>
+    <div class="compose-panel">
+
+      <div class="compose-header">
+        <span class="compose-header-title">New Message</span>
+        <div class="compose-header-actions">
+          <button class="compose-close-btn" id="composeCloseBtn" aria-label="Close compose">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="compose-fields">
+        <div class="compose-field">
+          <label class="compose-field-label" for="composeTo">To</label>
+          <input type="email" id="composeTo" class="compose-field-input" placeholder="Add recipients…" />
+        </div>
+        <div class="compose-field">
+          <label class="compose-field-label" for="composeSubject">Subject</label>
+          <input type="text" id="composeSubject" class="compose-field-input" placeholder="Subject" />
+        </div>
+        <div class="compose-body-field">
+          <textarea id="composeBody" class="compose-textarea" placeholder="Write your message here…"></textarea>
+        </div>
+      </div>
+
+      <div class="compose-footer">
+        <button class="compose-attach-btn" title="Attach file" aria-label="Attach file">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+        </button>
+        <div class="compose-footer-right">
+          <button class="compose-discard-btn" id="composeDiscardBtn">Discard</button>
+          <button class="compose-send-btn" id="composeSendBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Send
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Toast Container ────────────────────────────────────────────────── -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+  <script>
+    /* ================================================================
+       mCloud Mail — Page Logic
+       ================================================================ */
+
+    // ── Email data ───────────────────────────────────────────────────
+    const EMAILS = {
+      1: {
+        id: 1,
+        sender: 'mCloud Team',
+        email: 'team@mcloud.mosiur.com',
+        subject: 'Your mCloud storage is almost full',
+        date: 'Today, 9:42 AM',
+        avatarBg: 'linear-gradient(135deg,#FF6B6B,#FF3B30)',
+        avatarLetter: 'A',
+        body: `
+          <p>Hi Mosiur,</p>
+          <p>We noticed that your mCloud storage is currently at <strong>92% capacity</strong> — you're using 4.6 GB of your 5 GB plan. Once you reach 100%, you won't be able to upload new files, sync photos, or receive new emails.</p>
+          <p>To keep everything running smoothly, we recommend upgrading to <strong>mCloud+ 50 GB</strong> for just $0.99/month, or choose from our larger plans starting at 200 GB. Your existing files and data will remain untouched during the upgrade.</p>
+          <p>You can manage your storage and upgrade directly from your Account Settings page. If you have any questions or need help choosing a plan, our support team is available 24/7.</p>
+          <p>Thanks for being a valued mCloud member.<br>— The mCloud Team</p>
+        `
+      },
+      2: {
+        id: 2,
+        sender: 'Sarah Johnson',
+        email: 'sarah.johnson@example.com',
+        subject: 'Re: Project Update — Q2 Goals',
+        date: 'Today, 8:15 AM',
+        avatarBg: 'linear-gradient(135deg,#30D158,#229944)',
+        avatarLetter: 'S',
+        body: `
+          <p>Hey Mosiur,</p>
+          <p>Thanks for the detailed summary — I've reviewed the Q2 goals document and I think the roadmap looks solid overall. The new feature prioritization makes sense, especially given what we learned from last quarter's user interviews. I've added a few comments in the shared doc around the timeline for the onboarding redesign; I think we can push it two weeks earlier if we loop in the engineering team this week.</p>
+          <p>Let's sync on Friday afternoon — say 3 PM? I'll book a room. I'd also like to walk through the OKR tracker together since a few of the metrics need adjusting before we share with leadership next Monday.</p>
+          <p>Also, totally separate — did you get a chance to look at the design system proposal that Anika sent over? I think it could save us a ton of time if we align on it early. Let me know what you think.</p>
+          <p>Talk soon,<br>Sarah</p>
+        `
+      },
+      3: {
+        id: 3,
+        sender: 'Design Weekly',
+        email: 'digest@designweekly.io',
+        subject: '10 Typography Trends Shaping 2026',
+        date: 'Today, 7:00 AM',
+        avatarBg: 'linear-gradient(135deg,#BF5AF2,#9B30D9)',
+        avatarLetter: 'N',
+        body: `
+          <p><strong>Design Weekly · Issue #214</strong></p>
+          <p>This week we're diving deep into the typography trends that are defining visual design in 2026. From the explosive rise of variable fonts to the surprising comeback of humanist serifs, the typographic landscape is more exciting — and more opinionated — than it's been in years.</p>
+          <p><strong>Top 3 trends to watch:</strong> (1) <em>Variable fonts as the new default</em> — with browser support now universal, designers are finally leveraging weight axes dynamically for responsive, expressive type. (2) <em>Brutalist letterforms go mainstream</em> — chunky, unapologetic display fonts built for attention are showing up everywhere from startup homepages to luxury fashion editorial. (3) <em>Ultra-fine and ultra-bold pairings</em> — the contrast between 100-weight captions and 800-weight headlines creates a visual tension that feels both modern and timeless.</p>
+          <p>Read the full article, plus our curated list of free variable fonts and an interview with type designer Irene Vlachou, in this week's issue.</p>
+          <p>Until next week,<br>— The Design Weekly Team</p>
+        `
+      },
+      4: {
+        id: 4,
+        sender: 'Mike Chen',
+        email: 'mike.chen@gmail.com',
+        subject: 'Weekend hiking plans?',
+        date: 'Yesterday, 6:30 PM',
+        avatarBg: 'linear-gradient(135deg,#5AC8FA,#007AFF)',
+        avatarLetter: 'M',
+        body: `
+          <p>Hey! Hope your week's been good.</p>
+          <p>A few of us are planning a trail run this Saturday morning — we're thinking the Madhabkunda Forest trail, starting around 7 AM. It's about 12 km total with a solid elevation gain in the middle section, so bring water and good shoes. Should take 2–3 hours depending on pace, and then we usually grab breakfast at that place near the trailhead.</p>
+          <p>Weather looks perfect — mid-20s, partly cloudy, low humidity. It should be great. I know you've been wanting to try that trail since last year, so figured I'd finally make it happen. Let me know if you're in and I'll add you to the group chat for logistics.</p>
+          <p>Cheers,<br>Mike</p>
+        `
+      },
+      5: {
+        id: 5,
+        sender: 'Tanvir Ahmed',
+        email: 'tanvir.ahmed@freelance.io',
+        subject: 'Invoice #INV-2026-041',
+        date: 'Apr 6, 11:20 AM',
+        avatarBg: 'linear-gradient(135deg,#FFD60A,#FF9F0A)',
+        avatarLetter: 'T',
+        body: `
+          <p>Hi Mosiur,</p>
+          <p>Please find attached Invoice <strong>#INV-2026-041</strong> for the UI design and prototyping work completed in March 2026. The total amount due is <strong>$1,850.00 USD</strong>, covering 37 hours at the agreed rate of $50/hour.</p>
+          <p>Payment is due by <strong>April 30, 2026</strong>. You can pay via bank transfer (details on the invoice) or through the payment link included in the attachment. If you have any questions about specific line items or need a revised invoice for your records, don't hesitate to reach out.</p>
+          <p>It's been a pleasure working on the mCloud dashboard redesign — the project turned out really well. Looking forward to the next phase whenever you're ready to kick it off.</p>
+          <p>Best regards,<br>Tanvir Ahmed<br>Freelance UI/UX Designer</p>
+        `
+      },
+      6: {
+        id: 6,
+        sender: 'Zoom',
+        email: 'no-reply@zoom.us',
+        subject: 'Meeting recording ready',
+        date: 'Apr 5, 4:15 PM',
+        avatarBg: 'linear-gradient(135deg,#8E8E93,#636366)',
+        avatarLetter: 'Z',
+        body: `
+          <p>Hi Mosiur,</p>
+          <p>Your Zoom meeting <strong>"Design Review — mCloud Dashboard"</strong> from April 5, 2026 has been processed and your cloud recording is now ready to view.</p>
+          <p>The recording includes the full 52-minute session, including the screen share and all participant video. A transcript has also been automatically generated for your convenience. You can access the recording from your Zoom account under <em>My Recordings</em>, or click the link in this email. Please note that cloud recordings are stored for 30 days before automatic deletion — download a local copy if you'd like to keep it permanently.</p>
+          <p>If you did not host this meeting or believe this email was sent in error, please contact Zoom support.</p>
+          <p>— The Zoom Team</p>
+        `
+      }
+    };
+
+    // ── State ────────────────────────────────────────────────────────
+    let selectedEmailId = null;
+    const readEmails = new Set();
+
+    // ── DOM refs ─────────────────────────────────────────────────────
+    const readEmptyState   = document.getElementById('readEmptyState');
+    const readEmailContent = document.getElementById('readEmailContent');
+    const readActions      = document.getElementById('readActions');
+    const readSubject      = document.getElementById('readSubject');
+    const readDate         = document.getElementById('readDate');
+    const readAvatar       = document.getElementById('readAvatar');
+    const readSenderName   = document.getElementById('readSenderName');
+    const readSenderMeta   = document.getElementById('readSenderMeta');
+    const readBody         = document.getElementById('readBody');
+    const inboxBadge       = document.getElementById('inboxBadge');
+    const toastContainer   = document.getElementById('toastContainer');
+    const composeOverlay   = document.getElementById('composeOverlay');
+    const composeBtn       = document.getElementById('composeBtn');
+    const composeCloseBtn  = document.getElementById('composeCloseBtn');
+    const composeBackdrop  = document.getElementById('composeBackdrop');
+    const composeDiscardBtn= document.getElementById('composeDiscardBtn');
+    const composeSendBtn   = document.getElementById('composeSendBtn');
+
+    // ── Open email ───────────────────────────────────────────────────
+    function openEmail(id) {
+      const email = EMAILS[id];
+      if (!email) return;
+
+      // Deselect previous
+      document.querySelectorAll('.email-item').forEach(el => el.classList.remove('selected'));
+
+      // Select current
+      const item = document.querySelector(`.email-item[data-email-id="${id}"]`);
+      if (item) {
+        item.classList.add('selected');
+
+        // Mark as read
+        if (item.classList.contains('unread')) {
+          item.classList.remove('unread');
+          readEmails.add(id);
+          updateInboxBadge();
+        }
+      }
+
+      selectedEmailId = id;
+
+      // Populate reading pane
+      readSubject.textContent = email.subject;
+      readDate.textContent = email.date;
+      readAvatar.style.background = email.avatarBg;
+      readAvatar.textContent = email.avatarLetter;
+      readSenderName.textContent = email.sender;
+      readSenderMeta.innerHTML = `<span>From: <strong>${email.email}</strong></span> &nbsp;·&nbsp; <span>To: mosiur@mcloud.mosiur.com</span>`;
+      readBody.innerHTML = email.body;
+
+      // Show content, hide empty state
+      readEmptyState.style.display = 'none';
+      readEmailContent.classList.add('visible');
+      readActions.style.display = 'flex';
+
+      // Scroll reading pane to top
+      readEmailContent.scrollTop = 0;
+    }
+
+    // ── Update inbox badge ───────────────────────────────────────────
+    function updateInboxBadge() {
+      const unreadCount = document.querySelectorAll('.email-item.unread').length;
+      if (unreadCount > 0) {
+        inboxBadge.textContent = unreadCount;
+        inboxBadge.style.display = '';
+      } else {
+        inboxBadge.style.display = 'none';
+      }
+    }
+
+    // ── Toast ────────────────────────────────────────────────────────
+    function showToast(message, type) {
+      const icons = {
+        success: `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+        archive: `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`,
+        delete:  `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>`,
+        send:    `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`
+      };
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `${icons[type] || icons.success}<span>${message}</span>`;
+      toastContainer.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        toast.addEventListener('animationend', () => toast.remove());
+      }, 2000);
+    }
+
+    // ── Email action handlers ────────────────────────────────────────
+    document.getElementById('btnReply').addEventListener('click', () => {
+      showToast('Compose reply window opened', 'success');
+      setTimeout(() => openCompose(), 300);
+    });
+
+    document.getElementById('btnReplyAll').addEventListener('click', () => {
+      showToast('Reply all window opened', 'success');
+    });
+
+    document.getElementById('btnForward').addEventListener('click', () => {
+      showToast('Forward window opened', 'success');
+      setTimeout(() => openCompose(), 300);
+    });
+
+    document.getElementById('btnArchive').addEventListener('click', () => {
+      if (!selectedEmailId) return;
+      const item = document.querySelector(`.email-item[data-email-id="${selectedEmailId}"]`);
+      if (item) {
+        item.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(20px)';
+        setTimeout(() => {
+          item.remove();
+          updateInboxBadge();
+          clearReadPane();
+        }, 260);
+      }
+      showToast('Message archived', 'archive');
+    });
+
+    document.getElementById('btnDelete').addEventListener('click', () => {
+      if (!selectedEmailId) return;
+      const item = document.querySelector(`.email-item[data-email-id="${selectedEmailId}"]`);
+      if (item) {
+        item.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+          item.remove();
+          updateInboxBadge();
+          clearReadPane();
+        }, 260);
+      }
+      showToast('Message moved to Trash', 'delete');
+    });
+
+    function clearReadPane() {
+      selectedEmailId = null;
+      readEmptyState.style.display = '';
+      readEmailContent.classList.remove('visible');
+      readActions.style.display = 'none';
+    }
+
+    // ── Email list click delegation ──────────────────────────────────
+    document.querySelectorAll('.email-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const id = parseInt(item.dataset.emailId, 10);
+        openEmail(id);
+      });
+
+      // Keyboard accessibility
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const id = parseInt(item.dataset.emailId, 10);
+          openEmail(id);
+        }
+      });
+    });
+
+    // ── Sidebar folder clicks ────────────────────────────────────────
+    document.querySelectorAll('.sidebar-item[data-folder]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    // ── Compose modal ────────────────────────────────────────────────
+    function openCompose() {
+      composeOverlay.classList.add('open');
+      setTimeout(() => document.getElementById('composeTo').focus(), 200);
+    }
+
+    function closeCompose() {
+      composeOverlay.classList.remove('open');
+    }
+
+    composeBtn.addEventListener('click', openCompose);
+    composeCloseBtn.addEventListener('click', closeCompose);
+    composeBackdrop.addEventListener('click', closeCompose);
+    composeDiscardBtn.addEventListener('click', () => {
+      closeCompose();
+    });
+
+    composeSendBtn.addEventListener('click', () => {
+      const to = document.getElementById('composeTo').value.trim();
+      if (!to) {
+        document.getElementById('composeTo').focus();
+        return;
+      }
+      closeCompose();
+      showToast('Message sent successfully', 'send');
+      // Reset fields
+      setTimeout(() => {
+        document.getElementById('composeTo').value = '';
+        document.getElementById('composeSubject').value = '';
+        document.getElementById('composeBody').value = '';
+      }, 300);
+    });
+
+    // Close compose on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && composeOverlay.classList.contains('open')) {
+        closeCompose();
+      }
+    });
+
+    // ── Dark mode toggle (local override to ensure icon updates) ─────
+    (function () {
+      const html = document.documentElement;
+      const btn = document.getElementById('themeToggleBtn');
+
+      function updateIcon(theme) {
+        btn.innerHTML = theme === 'dark'
+          ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`
+          : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+      }
+
+      // Sync icon with current theme on load
+      updateIcon(html.getAttribute('data-theme') || 'light');
+
+      btn.addEventListener('click', () => {
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        if (window.__icloudState) window.__icloudState.theme = next;
+        updateIcon(next);
+      });
+    })();
+
+  </script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

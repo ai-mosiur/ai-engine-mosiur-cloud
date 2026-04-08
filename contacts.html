@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mCloud Contacts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── App Shell ── */
+    .app-topbar {
+      height: var(--topbar-h);
+      background: var(--bg-topbar);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+    .app-body {
+      display: flex;
+      height: calc(100vh - var(--topbar-h));
+      padding-top: var(--topbar-h);
+      overflow: hidden;
+    }
+    .app-sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 10px 0;
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+    .app-sidebar .sidebar-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 16px; cursor: pointer; font-size: 13px; font-weight: 500;
+      color: var(--text-primary); transition: background 0.15s;
+    }
+    .app-sidebar .sidebar-item:hover { background: var(--bg-tertiary); }
+    .app-sidebar .sidebar-item.active { background: var(--color-accent-bg); color: var(--color-accent); }
+    .app-sidebar .item-icon { width: 18px; height: 18px; flex-shrink: 0; }
+    .app-sidebar .sidebar-divider { height: 1px; background: var(--border-color); margin: 8px 0; }
+    .app-sidebar .sidebar-section-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-tertiary); padding: 10px 16px 4px;
+    }
+    .app-main {
+      flex: 1; padding: 0; overflow: hidden;
+      background: var(--bg-primary);
+      transition: background var(--transition-slow);
+    }
+    .back-btn-label { font-size: 13px; }
+    .item-badge {
+      margin-left: auto; background: var(--bg-tertiary);
+      color: var(--text-tertiary); font-size: 11px; font-weight: 600;
+      min-width: 18px; height: 18px; border-radius: var(--radius-full);
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0 5px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 6px 12px; border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background: var(--bg-card); color: var(--text-primary);
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn:hover { background: var(--bg-secondary); }
+    .btn.btn-primary {
+      background: var(--color-accent); color: #fff;
+      border-color: var(--color-accent);
+    }
+    .btn.btn-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+
+    /* ── Contacts body layout ── */
+    .contacts-body {
+      display: flex;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* ── Contact list column ── */
+    .contact-list-col {
+      width: 300px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-sidebar);
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+    .contact-search-wrap {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .contact-search {
+      width: 100%;
+      padding: 7px 12px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .contact-search:focus { border-color: var(--color-accent); }
+    .contact-list-scroll {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .letter-header {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-tertiary);
+      padding: 8px 16px 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      position: sticky;
+      top: 0;
+      background: var(--bg-sidebar);
+      z-index: 1;
+      transition: background var(--transition-slow);
+    }
+    .contact-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .contact-row:hover { background: var(--bg-secondary); }
+    .contact-row.active { background: var(--color-accent-bg); }
+    .contact-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--gradient-brand);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 14px;
+      flex-shrink: 0;
+    }
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name {
+      font-size: 13px; font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .contact-sub {
+      font-size: 11px; color: var(--text-tertiary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── Contact detail column ── */
+    .contact-detail-col {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px;
+      background: var(--bg-primary);
+      transition: background var(--transition-slow);
+    }
+    .contact-detail-view {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .contact-detail-view.hidden { display: none; }
+
+    /* ── Detail header ── */
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .detail-avatar-lg {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: var(--gradient-brand);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .detail-info { flex: 1; }
+    .detail-name { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+    .detail-sub { font-size: 13px; color: var(--text-secondary); }
+
+    /* ── Detail action buttons ── */
+    .detail-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .detail-action-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      border: none;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .detail-action-btn:hover { background: var(--bg-tertiary); }
+
+    /* ── Detail cards ── */
+    .detail-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+    .detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .detail-row-label {
+      width: 80px;
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding-top: 1px;
+    }
+    .detail-row-value {
+      font-size: 14px;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    /* ── Empty state ── */
+    .contact-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: var(--text-tertiary);
+      font-size: 14px;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg-overlay);
+      display: none; align-items: center; justify-content: center;
+      z-index: 500;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      width: min(480px, calc(100vw - 40px));
+      box-shadow: var(--shadow-xl);
+      max-height: calc(100vh - 60px);
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+    .modal-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: none; background: var(--bg-tertiary);
+      color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .modal-close:hover { background: var(--border-color); }
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 8px;
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* ── Form elements ── */
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 8px 10px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--color-accent);
+    }
+    .form-textarea { resize: vertical; min-height: 72px; }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+
+    /* ── Dark mode ── */
+    [data-theme="dark"] .contact-list-col { background: var(--bg-sidebar); border-color: var(--border-color); }
+    [data-theme="dark"] .contact-search { background: var(--bg-tertiary); border-color: var(--border-color); color: var(--text-primary); }
+    [data-theme="dark"] .letter-header { background: var(--bg-sidebar); }
+    [data-theme="dark"] .contact-row:hover { background: var(--bg-secondary); }
+    [data-theme="dark"] .contact-row.active { background: var(--color-accent-bg); }
+    [data-theme="dark"] .contact-detail-col { background: var(--bg-primary); }
+    [data-theme="dark"] .detail-card { background: var(--bg-card); border-color: var(--border-color); }
+    [data-theme="dark"] .detail-header { border-color: var(--border-color); }
+    [data-theme="dark"] .detail-action-btn { background: var(--bg-secondary); }
+    [data-theme="dark"] .detail-action-btn:hover { background: var(--bg-tertiary); }
+    [data-theme="dark"] .modal-box { background: var(--bg-card); }
+    [data-theme="dark"] .form-input,
+    [data-theme="dark"] .form-select,
+    [data-theme="dark"] .form-textarea { background: var(--bg-tertiary); border-color: var(--border-color); color: var(--text-primary); }
+    [data-theme="dark"] .btn { background: var(--bg-card); border-color: var(--border-color); color: var(--text-primary); }
+    [data-theme="dark"] .btn.btn-primary { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+    [data-theme="dark"] .modal-footer { border-color: var(--border-color); }
+    [data-theme="dark"] .item-badge { background: var(--bg-tertiary); color: var(--text-tertiary); }
+  </style>
+</head>
+<body class="app-page" id="contacts-page">
+<div class="app-shell">
+
+  <!-- Top Bar -->
+  <header class="app-topbar">
+    <div class="topbar-left">
+      <a href="dashboard.html" class="nav-btn" style="text-decoration:none;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="back-btn-label">mCloud</span>
+      </a>
+    </div>
+    <div class="topbar-center">Contacts</div>
+    <div class="topbar-right">
+      <button class="btn btn-primary" id="btn-add-contact" style="height:30px;padding:0 12px;font-size:0.8rem;">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Add Contact
+      </button>
+      <button class="nav-btn" data-theme-toggle title="Toggle dark mode" aria-label="Toggle dark mode">
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M13.5 10A5.5 5.5 0 016 2.5a5.5 5.5 0 100 11 5.5 5.5 0 007.5-3.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- Sidebar -->
+    <nav class="app-sidebar" id="contacts-sidebar">
+      <div class="sidebar-item active" data-group="all">
+        <svg class="item-icon" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="6" r="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M3 16c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        All Contacts
+        <span class="item-badge">24</span>
+      </div>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Groups</div>
+
+      <div class="sidebar-item" data-group="family">
+        <svg class="item-icon" viewBox="0 0 18 18" fill="none">
+          <circle cx="6.5" cy="6" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="12.5" cy="6" r="2" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M1 16c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M12.5 10c2.5 0 4.5 1.5 4.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Family
+      </div>
+      <div class="sidebar-item" data-group="work">
+        <svg class="item-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="6" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M6 6V4a2 2 0 014 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Work
+      </div>
+      <div class="sidebar-item" data-group="friends">
+        <svg class="item-icon" viewBox="0 0 18 18" fill="none">
+          <path d="M9 2l1.8 3.6L15 6.2l-3 2.9.7 4.1L9 11.1l-3.7 2.1.7-4.1L3 6.2l4.2-.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        Friends
+      </div>
+      <div class="sidebar-item" data-group="vip">
+        <svg class="item-icon" viewBox="0 0 18 18" fill="none">
+          <path d="M9 1l2.5 5 5.5.8-4 3.9.95 5.5L9 13.6l-4.95 2.6.95-5.5L1 6.8l5.5-.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        VIP
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-item" data-group="all">
+        <svg class="item-icon" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M9 5v4l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Recently Added
+      </div>
+      <div class="sidebar-item">
+        <svg class="item-icon" viewBox="0 0 18 18" fill="none">
+          <polyline points="1,4 3,4 17,4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M15 4l-1 11H4L3 4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M7 4V2h4v2" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        Recently Deleted
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <div class="contacts-body">
+
+        <!-- Contact List Column -->
+        <div class="contact-list-col">
+          <div class="contact-search-wrap">
+            <input type="search" class="contact-search" id="contact-search" placeholder="Search contacts…" />
+          </div>
+          <div class="contact-list-scroll" id="contact-list-scroll">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Contact Detail Column -->
+        <div class="contact-detail-col">
+
+          <!-- Empty state -->
+          <div class="contact-empty" id="contact-empty">
+            <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+              <circle cx="36" cy="27" r="14" stroke="currentColor" stroke-width="2.5"/>
+              <path d="M10 66c0-14.36 11.64-26 26-26s26 11.64 26 26" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span>Select a contact</span>
+          </div>
+
+          <!-- Detail view -->
+          <div class="contact-detail-view hidden" id="contact-detail">
+
+            <!-- Header -->
+            <div class="detail-header">
+              <div class="detail-avatar-lg" id="d-avatar">M</div>
+              <div class="detail-info" style="flex:1;">
+                <div class="detail-name" id="d-name">Contact Name</div>
+                <div class="detail-sub" id="d-sub">Work</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button class="btn" id="edit-btn" style="height:30px;font-size:0.8rem;">Edit</button>
+                <button class="btn" id="delete-contact-btn" style="height:30px;font-size:0.8rem;color:#EF4444;border-color:#EF4444;">Delete</button>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="detail-actions">
+              <button class="detail-action-btn">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M15.5 12.5c-.3-.7-1.3-1.1-1.9-1.4-.9-.4-1.1-.3-1.6.1-.3.3-.5.5-.9.3a8.8 8.8 0 01-3.6-3.6c-.2-.4 0-.6.3-.9.4-.5.5-.7.1-1.6C7.6 4.8 7.2 3.8 6.5 3.5A3.9 3.9 0 005 3C4 3 2.5 4.5 2.5 5.5 2.5 12 6 15.5 12.5 15.5c1 0 2.5-1.5 2.5-2.5 0-.2-.1-.4 0-.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Call
+              </button>
+              <button class="detail-action-btn">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M15 3H3a1 1 0 00-1 1v8a1 1 0 001 1h10l4 3V4a1 1 0 00-1-1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Message
+              </button>
+              <button class="detail-action-btn">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <rect x="2" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M2 6l7 5 7-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Email
+              </button>
+              <button class="detail-action-btn">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <rect x="2" y="4" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M13 7.5v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                FaceTime
+              </button>
+            </div>
+
+            <!-- Info card -->
+            <div class="detail-card">
+              <div class="detail-row">
+                <span class="detail-row-label">Phone</span>
+                <span class="detail-row-value" id="d-phone">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row-label">Email</span>
+                <span class="detail-row-value" id="d-email">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row-label">Company</span>
+                <span class="detail-row-value" id="d-company">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row-label">Address</span>
+                <span class="detail-row-value" id="d-addr">—</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-row-label">Birthday</span>
+                <span class="detail-row-value" id="d-bday">—</span>
+              </div>
+            </div>
+
+            <!-- Notes card -->
+            <div class="detail-card">
+              <div class="detail-row">
+                <span class="detail-row-label">Notes</span>
+                <span class="detail-row-value" id="d-notes" style="color:var(--text-secondary);">—</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div><!-- end detail col -->
+
+      </div><!-- end contacts-body -->
+    </main>
+
+  </div><!-- end app-body -->
+
+</div><!-- end app-shell -->
+
+<!-- Add Contact Modal -->
+<div class="modal-overlay" id="add-contact-modal">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="modal-title">New Contact</span>
+      <button class="modal-close" onclick="closeModal('add-contact-modal')">✕</button>
+    </div>
+
+    <!-- Photo upload area -->
+    <div style="display:flex;justify-content:center;margin-bottom:4px;">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--bg-input);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.5rem;color:var(--text-tertiary);">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <circle cx="11" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M3 20c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">First Name</label>
+        <input type="text" class="form-input" id="new-first" placeholder="First…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <input type="text" class="form-input" id="new-last" placeholder="Last…" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Phone</label>
+      <input type="tel" class="form-input" id="new-phone" placeholder="+1 (555) 000-0000" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-input" id="new-email" placeholder="email@example.com" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Company</label>
+        <input type="text" class="form-input" id="new-company" placeholder="Company…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Group</label>
+        <select class="form-select" id="new-group">
+          <option value="Work">Work</option>
+          <option value="Family">Family</option>
+          <option value="Friends">Friends</option>
+          <option value="VIP">VIP</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="new-notes" placeholder="Add a note…"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('add-contact-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-contact-btn">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+// ── Contacts Page: Contact list, detail panel, search ──────────────────────
+
+(function() {
+
+  // ── Avatar color palette ─────────────────────────────────────────────────
+  const AVATAR_COLORS = [
+    '#6C47FF','#3B82F6','#22C55E','#F97316','#EC4899',
+    '#6366F1','#14B8A6','#EAB308','#8B5CF6','#F43F5E',
+  ];
+
+  function avatarColor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  }
+
+  // ── Contact data ────────────────────────────────────────────────────────
+  // Each contact: name, role, company, phone, email, address, birthday, notes, isYou
+  const ALL_CONTACTS = [
+    {
+      name: 'Ahmed Khan',
+      role: 'Software Engineer', company: 'TechNova Ltd',
+      phone: '+880 1711-223344', email: 'ahmed.khan@technova.io',
+      address: 'Gulshan-2, Dhaka, Bangladesh',
+      birthday: 'March 15, 1990',
+      notes: 'Met at DevFest 2024. Great backend developer, knows Go and Rust.',
+      group: 'Work',
+    },
+    {
+      name: 'Alice Chen',
+      role: 'Product Designer', company: 'Pixel & Co',
+      phone: '+1 (415) 555-0198', email: 'alice.chen@pixelco.com',
+      address: '28 Union Square, San Francisco, CA 94103',
+      birthday: 'July 22, 1992',
+      notes: 'Collaborated on the Figma design system project. Amazing eye for detail.',
+      group: 'Work',
+    },
+    {
+      name: 'Anna Smith',
+      role: 'Marketing Lead', company: 'GrowthHQ',
+      phone: '+44 20 7946 0381', email: 'anna@growthhq.co.uk',
+      address: '14 Shoreditch High St, London E1 6JE',
+      birthday: 'January 5, 1988',
+      notes: 'Handled the Q1 campaigns. Very results-driven.',
+      group: 'Work',
+    },
+    {
+      name: 'David Wilson',
+      role: 'CTO', company: 'StackForge',
+      phone: '+1 (646) 555-0172', email: 'd.wilson@stackforge.dev',
+      address: '350 5th Avenue, New York, NY 10118',
+      birthday: 'November 3, 1981',
+      notes: 'Investor and mentor. Connected through YC network.',
+      group: 'VIP',
+    },
+    {
+      name: 'Emma Rodriguez',
+      role: 'UX Researcher', company: 'Insight Labs',
+      phone: '+1 (512) 555-0149', email: 'emma.r@insightlabs.io',
+      address: '600 Congress Ave, Austin, TX 78701',
+      birthday: 'February 28, 1994',
+      notes: 'Ran the user research for the mobile app. Thorough and empathetic.',
+      group: 'Work',
+    },
+    {
+      name: 'James Taylor',
+      role: 'Freelance Writer', company: 'Self-employed',
+      phone: '+61 2 9876 5432', email: 'james.t@writerly.au',
+      address: '88 King St, Melbourne VIC 3000',
+      birthday: 'June 12, 1986',
+      notes: 'Old college friend. Writes for several tech publications.',
+      group: 'Friends',
+    },
+    {
+      name: 'Lena Petrov',
+      role: 'Data Scientist', company: 'Algo Systems',
+      phone: '+49 30 12345678', email: 'l.petrov@algosys.de',
+      address: 'Unter den Linden 17, 10117 Berlin',
+      birthday: 'September 9, 1991',
+      notes: 'Built the recommendation engine for V1. Sharp with Python and PyTorch.',
+      group: 'Work',
+    },
+    {
+      name: 'Lisa Park',
+      role: 'iOS Developer', company: 'AppCraft Studio',
+      phone: '+82 10-2345-6789', email: 'lisa.park@appcraft.kr',
+      address: 'Gangnam-gu, Seoul, South Korea',
+      birthday: 'April 19, 1993',
+      notes: 'Helped port the app to Swift UI. Very responsive and professional.',
+      group: 'Work',
+    },
+    {
+      name: 'Mike Chen',
+      role: 'DevOps Engineer', company: 'CloudPilot',
+      phone: '+1 (650) 555-0133', email: 'mike.chen@cloudpilot.io',
+      address: '1 Infinite Loop, Cupertino, CA 95014',
+      birthday: 'December 7, 1989',
+      notes: 'Manages all Kubernetes clusters. On-call buddy.',
+      group: 'Work',
+    },
+    {
+      name: 'Mosiur',
+      role: 'Founder & CEO', company: 'keepmore.com',
+      phone: '+880 1901-123456', email: 'holly@keepmore.com',
+      address: 'Dhanmondi, Dhaka, Bangladesh',
+      birthday: 'April 8, 1990',
+      notes: 'That’s me 😊',
+      group: 'VIP',
+      isYou: true,
+    },
+    {
+      name: 'Priya Sharma',
+      role: 'Finance Manager', company: 'FinBridge',
+      phone: '+91 98765 43210', email: 'priya.sharma@finbridge.in',
+      address: 'Bandra West, Mumbai 400050',
+      birthday: 'August 14, 1987',
+      notes: 'Handles vendor invoices and quarterly reports.',
+      group: 'Work',
+    },
+    {
+      name: 'Sarah Johnson',
+      role: 'Head of Growth', company: 'Launchpad Inc',
+      phone: '+1 (312) 555-0177', email: 'sarah.j@launchpad.co',
+      address: '233 S Wacker Dr, Chicago, IL 60606',
+      birthday: 'October 30, 1990',
+      notes: 'Best friend from university. Lunch every month.',
+      group: 'Friends',
+    },
+    {
+      name: 'Tanvir Ahmed',
+      role: 'Full Stack Developer', company: 'Nexus Digital',
+      phone: '+880 1812-334455', email: 'tanvir@nexusdigital.bd',
+      address: 'Uttara, Dhaka, Bangladesh',
+      birthday: 'May 21, 1992',
+      notes: 'Built the onboarding flow. React + Node expert.',
+      group: 'Work',
+    },
+  ];
+
+  let selectedContact = null;
+  let filteredContacts = [...ALL_CONTACTS];
+
+  // ── Group contacts by first letter ─────────────────────────────────────────
+  function groupByLetter(contacts) {
+    const groups = {};
+    contacts.forEach(c => {
+      const letter = c.name[0].toUpperCase();
+      if (!groups[letter]) groups[letter] = [];
+      groups[letter].push(c);
+    });
+    return groups;
+  }
+
+  // ── Render contact list ─────────────────────────────────────────────────────
+  function renderContactList(contacts) {
+    const scroll = document.getElementById('contact-list-scroll');
+    if (!scroll) return;
+    scroll.innerHTML = '';
+
+    const groups = groupByLetter(contacts);
+    const letters = Object.keys(groups).sort();
+
+    if (letters.length === 0) {
+      scroll.innerHTML = '<div style="padding:20px 16px;font-size:13px;color:var(--text-tertiary);">No contacts found</div>';
+      return;
+    }
+
+    letters.forEach(letter => {
+      // Letter header
+      const header = document.createElement('div');
+      header.className = 'letter-header';
+      header.textContent = letter;
+      scroll.appendChild(header);
+
+      // Contact rows
+      groups[letter].forEach(contact => {
+        const row = document.createElement('div');
+        row.className = 'contact-row';
+        if (selectedContact && selectedContact.name === contact.name) {
+          row.classList.add('active');
+        }
+
+        const color = avatarColor(contact.name);
+        const initial = contact.name[0].toUpperCase();
+        const youBadge = contact.isYou
+          ? `<span style="font-size:10px;font-weight:600;background:var(--color-accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:4px;">you</span>`
+          : '';
+
+        row.innerHTML = `
+          <div class="contact-avatar" style="background:${color};">${initial}</div>
+          <div class="contact-info">
+            <div class="contact-name">${contact.name}${youBadge}</div>
+            <div class="contact-sub">${contact.role} · ${contact.company}</div>
+          </div>
+        `;
+
+        row.addEventListener('click', () => selectContact(contact));
+        scroll.appendChild(row);
+      });
+    });
+  }
+
+  // ── Show contact detail ────────────────────────────────────────────────────
+  function selectContact(contact) {
+    selectedContact = contact;
+    renderContactList(filteredContacts); // re-render to update highlight
+
+    // Show detail, hide empty state
+    const emptyEl  = document.getElementById('contact-empty');
+    const detailEl = document.getElementById('contact-detail');
+    if (emptyEl)  emptyEl.style.display  = 'none';
+    if (detailEl) detailEl.classList.remove('hidden');
+
+    // Fill avatar
+    const avatar = document.getElementById('d-avatar');
+    if (avatar) {
+      avatar.textContent = contact.name[0].toUpperCase();
+      avatar.style.background = avatarColor(contact.name);
+    }
+
+    // Large avatar in header also reflects color
+    const lgAvatar = document.querySelector('.detail-avatar-lg');
+    if (lgAvatar) {
+      lgAvatar.textContent = contact.name[0].toUpperCase();
+      lgAvatar.style.background = avatarColor(contact.name);
+    }
+
+    // Fill name & subtitle
+    const nameEl = document.getElementById('d-name');
+    const subEl  = document.getElementById('d-sub');
+    if (nameEl) nameEl.textContent = contact.name + (contact.isYou ? ' (you)' : '');
+    if (subEl)  subEl.textContent  = contact.role + ' · ' + contact.company;
+
+    // Fill info card fields
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+    set('d-phone',   contact.phone);
+    set('d-email',   contact.email);
+    set('d-company', contact.company);
+    set('d-addr',    contact.address);
+    set('d-bday',    contact.birthday);
+    set('d-notes',   contact.notes);
+  }
+
+  // ── Search / filter ───────────────────────────────────────────────────────────
+  const searchInput = document.getElementById('contact-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.toLowerCase().trim();
+      if (q === '') {
+        filteredContacts = [...ALL_CONTACTS];
+      } else {
+        filteredContacts = ALL_CONTACTS.filter(c =>
+          c.name.toLowerCase().includes(q) ||
+          c.role.toLowerCase().includes(q)  ||
+          c.company.toLowerCase().includes(q) ||
+          c.email.toLowerCase().includes(q)
+        );
+      }
+      renderContactList(filteredContacts);
+    });
+  }
+
+  // ── Add contact modal ──────────────────────────────────────────────────────
+  const btnAddContact = document.getElementById('btn-add-contact');
+  if (btnAddContact) {
+    btnAddContact.addEventListener('click', () => {
+      const modal = document.getElementById('add-contact-modal');
+      if (modal) modal.classList.add('open');
+    });
+  }
+
+  // Save new contact
+  const saveContactBtn = document.getElementById('save-contact-btn');
+  if (saveContactBtn) {
+    saveContactBtn.addEventListener('click', () => {
+      const first   = document.getElementById('new-first')?.value.trim();
+      const last    = document.getElementById('new-last')?.value.trim();
+      const phone   = document.getElementById('new-phone')?.value.trim();
+      const email   = document.getElementById('new-email')?.value.trim();
+      const company = document.getElementById('new-company')?.value.trim();
+      const group   = document.getElementById('new-group')?.value || 'Work';
+      const notes   = document.getElementById('new-notes')?.value.trim();
+
+      if (!first) return;
+
+      const newContact = {
+        name: [first, last].filter(Boolean).join(' '),
+        role: group,
+        company: company || '—',
+        phone: phone || '',
+        email: email || '',
+        address: '',
+        birthday: '',
+        notes: notes || '',
+        group,
+      };
+
+      ALL_CONTACTS.push(newContact);
+      ALL_CONTACTS.sort((a, b) => a.name.localeCompare(b.name));
+      filteredContacts = [...ALL_CONTACTS];
+      renderContactList(filteredContacts);
+      selectContact(newContact);
+      closeModal('add-contact-modal');
+
+      // Clear form
+      ['new-first','new-last','new-phone','new-email','new-company','new-notes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+    });
+  }
+
+  // ── Delete contact button ──────────────────────────────────────────────────
+  const deleteBtn = document.getElementById('delete-contact-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+      if (!selectedContact) return;
+      if (!confirm('Delete ' + selectedContact.name + '?')) return;
+
+      const idx = ALL_CONTACTS.findIndex(c => c.name === selectedContact.name);
+      if (idx > -1) ALL_CONTACTS.splice(idx, 1);
+
+      filteredContacts = filteredContacts.filter(c => c.name !== selectedContact.name);
+      selectedContact = null;
+
+      // Hide detail, show empty state
+      const emptyEl  = document.getElementById('contact-empty');
+      const detailEl = document.getElementById('contact-detail');
+      if (emptyEl)  emptyEl.style.display  = '';
+      if (detailEl) detailEl.classList.add('hidden');
+
+      renderContactList(filteredContacts);
+    });
+  }
+
+  // ── Sidebar group filter ────────────────────────────────────────────────────
+  document.querySelectorAll('[data-group]').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('[data-group]').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+
+      const group = item.dataset.group;
+      if (group === 'all') {
+        filteredContacts = [...ALL_CONTACTS];
+      } else {
+        filteredContacts = ALL_CONTACTS.filter(c => c.group.toLowerCase() === group.toLowerCase());
+      }
+
+      if (searchInput) searchInput.value = '';
+      renderContactList(filteredContacts);
+    });
+  });
+
+  // ── Initial render — pre-select first contact ────────────────────────────────
+  renderContactList(filteredContacts);
+  if (ALL_CONTACTS.length > 0) {
+    selectContact(ALL_CONTACTS[0]);
+  }
+
+})();
+</script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

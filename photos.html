@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photos — mCloud</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Photos-specific layout ─────────────────────────────────────── */
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Top Bar ──────────────────────────────────────────────────────── */
+    .photos-topbar {
+      height: 48px;
+      background: var(--color-surface-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--color-divider);
+      display: flex;
+      align-items: center;
+      padding: 0 var(--space-4);
+      gap: var(--space-3);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 100;
+    }
+
+    .topbar-back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      color: var(--color-accent);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, opacity 0.15s;
+      white-space: nowrap;
+    }
+    .topbar-back:hover { background: rgba(108,71,255,0.08); }
+    .topbar-back svg { flex-shrink: 0; }
+
+    .topbar-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text);
+      line-height: 1.2;
+    }
+
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .topbar-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1);
+      height: 32px;
+      padding: 0 var(--space-3);
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      font-family: var(--font-body);
+    }
+    .topbar-btn:hover {
+      background: var(--color-surface-2);
+      border-color: rgba(108,71,255,0.25);
+    }
+    .topbar-btn.accent {
+      background: var(--color-accent);
+      color: #fff;
+      border-color: var(--color-accent);
+    }
+    .topbar-btn.accent:hover {
+      background: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+    }
+    .topbar-btn svg { flex-shrink: 0; }
+
+    /* Selection bar */
+    .selection-bar {
+      height: 40px;
+      background: rgba(108,71,255,0.08);
+      border-bottom: 1px solid rgba(108,71,255,0.15);
+      display: none;
+      align-items: center;
+      padding: 0 var(--space-4);
+      gap: var(--space-3);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-accent);
+      flex-shrink: 0;
+    }
+    .selection-bar.visible { display: flex; }
+    .selection-bar-count { flex: 1; }
+    .selection-bar-actions { display: flex; gap: var(--space-2); }
+    .sel-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(108,71,255,0.3);
+      background: var(--color-surface);
+      color: var(--color-accent);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-family: var(--font-body);
+    }
+    .sel-action-btn:hover { background: rgba(108,71,255,0.1); }
+    .sel-action-btn.danger { color: var(--color-error); border-color: rgba(255,59,48,0.3); }
+    .sel-action-btn.danger:hover { background: rgba(255,59,48,0.08); }
+
+    /* ── Layout ────────────────────────────────────────────────────────── */
+    .photos-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ──────────────────────────────────────────────────────── */
+    .photos-sidebar {
+      width: 220px;
+      min-width: 220px;
+      flex-shrink: 0;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-divider);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: var(--space-3) 0 var(--space-6);
+    }
+
+    .sidebar-section-label {
+      padding: var(--space-3) var(--space-4) var(--space-1);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-faint);
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-sm);
+      margin: 1px var(--space-2);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text);
+      user-select: none;
+      transition: background 0.15s, color 0.15s;
+      min-height: 32px;
+    }
+    .sidebar-item:hover { background: var(--color-surface-2); }
+    .sidebar-item.active {
+      background: rgba(108,71,255,0.1);
+      color: var(--color-accent);
+    }
+    .sidebar-item-icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--color-accent);
+      opacity: 0.85;
+    }
+    .sidebar-item.active .sidebar-item-icon { opacity: 1; }
+    .sidebar-item-count {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--color-text-faint);
+      font-weight: 400;
+    }
+    .sidebar-item.active .sidebar-item-count { color: var(--color-accent); opacity: 0.7; }
+
+    /* ── Main Content ─────────────────────────────────────────────────── */
+    .photos-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--color-bg);
+    }
+
+    /* ── Tab Bar ──────────────────────────────────────────────────────── */
+    .photos-tabbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: var(--space-3) var(--space-5);
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-divider);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.18s;
+      font-family: var(--font-body);
+    }
+    .tab-btn:hover { color: var(--color-text); background: var(--color-surface-2); }
+    .tab-btn.active {
+      background: var(--color-accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* ── Photos Grid Panel ────────────────────────────────────────────── */
+    .tab-panel { display: none; flex: 1; overflow-y: auto; }
+    .tab-panel.active { display: flex; flex-direction: column; }
+
+    .photos-grid-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-4) var(--space-5);
+    }
+
+    .month-group { margin-bottom: var(--space-6); }
+    .month-header {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: var(--space-3);
+      letter-spacing: -0.01em;
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 3px;
+      transition: grid-template-columns 0.25s ease;
+    }
+    .photo-grid.grid-small {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    .photo-grid.grid-large {
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    .photo-thumb {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: 2px;
+      overflow: hidden;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .photo-thumb-bg {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      transition: transform 0.2s ease;
+    }
+    .photo-thumb:hover .photo-thumb-bg { transform: scale(1.04); }
+
+    /* Hover overlay */
+    .photo-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.3) 100%);
+      opacity: 0;
+      transition: opacity 0.18s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px;
+    }
+    .photo-thumb:hover .photo-overlay { opacity: 1; }
+    .photo-thumb.selected .photo-overlay { opacity: 1; }
+
+    .overlay-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .overlay-bottom { display: flex; justify-content: flex-end; gap: 6px; }
+
+    /* Checkbox */
+    .photo-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.85);
+      background: rgba(0,0,0,0.25);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .photo-thumb.selected .photo-checkbox {
+      background: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+    .photo-checkbox svg { opacity: 0; transition: opacity 0.15s; }
+    .photo-thumb.selected .photo-checkbox svg { opacity: 1; }
+
+    /* Overlay action icons */
+    .overlay-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .overlay-icon:hover { background: rgba(0,0,0,0.55); transform: scale(1.1); }
+    .overlay-icon.liked { color: #FF2D55; }
+
+    /* Selected border */
+    .photo-thumb.selected::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 3px solid var(--color-accent);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    /* ── Albums Panel ─────────────────────────────────────────────────── */
+    .albums-grid-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-5);
+    }
+
+    .albums-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-4);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 11px;
+    }
+
+    .albums-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .album-tile {
+      cursor: pointer;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .album-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+    .album-tile-preview {
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      border-radius: var(--radius-md);
+      position: relative;
+      overflow: hidden;
+    }
+    .album-tile-preview::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.25) 100%);
+    }
+
+    .album-tile-info { padding: var(--space-2) 0; }
+    .album-tile-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+    .album-tile-count {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Memories Panel ───────────────────────────────────────────────── */
+    .memories-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .memory-card {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .memory-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+    .memory-card-bg {
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      position: relative;
+    }
+    .memory-card-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.65) 100%);
+    }
+
+    .memory-card-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: var(--space-4);
+      color: #fff;
+    }
+    .memory-card-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .memory-card-subtitle {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+
+    /* ── People Panel ─────────────────────────────────────────────────── */
+    .people-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-5);
+    }
+    .people-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: var(--space-4);
+    }
+    .person-tile { cursor: pointer; text-align: center; }
+    .person-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto var(--space-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      overflow: hidden;
+    }
+    .person-tile:hover .person-avatar { transform: scale(1.06); box-shadow: var(--shadow-md); }
+    .person-name { font-size: 12px; font-weight: 500; color: var(--color-text); }
+    .person-count { font-size: 11px; color: var(--color-text-muted); }
+
+    /* ── Lightbox ─────────────────────────────────────────────────────── */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      animation: lightboxFadeIn 0.2s ease;
+    }
+    .lightbox.open { display: flex; }
+
+    @keyframes lightboxFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Lightbox top bar */
+    .lightbox-topbar {
+      display: flex;
+      align-items: center;
+      padding: var(--space-3) var(--space-5);
+      gap: var(--space-3);
+      flex-shrink: 0;
+    }
+    .lightbox-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: rgba(255,255,255,0.9);
+      border: none;
+      transition: background 0.15s;
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,0.22); }
+
+    .lightbox-counter {
+      margin-left: auto;
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 400;
+    }
+
+    /* Lightbox image area */
+    .lightbox-image-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      padding: var(--space-4);
+    }
+
+    .lightbox-photo {
+      width: min(60vh, 80vw);
+      height: min(60vh, 80vw);
+      border-radius: var(--radius-xl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10rem;
+      box-shadow: var(--shadow-lg);
+      animation: photoSlideIn 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes photoSlideIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Nav arrows */
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.9);
+      transition: background 0.15s, transform 0.15s;
+      z-index: 10;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.22); }
+    .lightbox-nav:active { transform: translateY(-50%) scale(0.94); }
+    .lightbox-nav.prev { left: var(--space-4); }
+    .lightbox-nav.next { right: var(--space-4); }
+    .lightbox-nav:disabled { opacity: 0.25; cursor: default; }
+
+    /* Lightbox bottom bar */
+    .lightbox-bottombar {
+      display: flex;
+      align-items: center;
+      padding: var(--space-3) var(--space-5) var(--space-5);
+      gap: var(--space-4);
+      flex-shrink: 0;
+    }
+
+    .lightbox-info {
+      flex: 1;
+    }
+    .lightbox-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+    .lightbox-date {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 2px;
+    }
+
+    .lightbox-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .lightbox-action-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.85);
+      transition: background 0.15s, color 0.15s, transform 0.15s;
+    }
+    .lightbox-action-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+    .lightbox-action-btn.liked { color: #FF2D55; }
+    .lightbox-action-btn.delete:hover { background: rgba(255,59,48,0.3); color: #FF3B30; }
+
+    /* Filmstrip */
+    .lightbox-filmstrip {
+      display: flex;
+      gap: 4px;
+      padding: 0 var(--space-5) var(--space-4);
+      overflow-x: auto;
+      flex-shrink: 0;
+      scrollbar-width: none;
+    }
+    .lightbox-filmstrip::-webkit-scrollbar { display: none; }
+
+    .filmstrip-thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.15s, transform 0.15s;
+      border: 2px solid transparent;
+      overflow: hidden;
+    }
+    .filmstrip-thumb:hover { opacity: 0.8; }
+    .filmstrip-thumb.active {
+      opacity: 1;
+      border-color: #fff;
+      transform: scale(1.08);
+    }
+
+    /* ── Dark Mode ────────────────────────────────────────────────────── */
+    [data-theme="dark"] body { background: var(--color-bg); }
+    [data-theme="dark"] .photos-topbar { background: rgba(30,30,35,0.85); }
+    [data-theme="dark"] .photos-sidebar { background: var(--color-surface); }
+    [data-theme="dark"] .photos-tabbar { background: var(--color-surface); }
+    [data-theme="dark"] .topbar-btn { background: var(--color-surface); }
+    [data-theme="dark"] .lightbox { background: rgba(0,0,0,0.95); }
+
+    /* ── Upload drag zone (hidden overlay when dragging) ─────────────── */
+    .drag-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(108,71,255,0.12);
+      border: 3px dashed var(--color-accent);
+      border-radius: var(--radius-xl);
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-accent);
+      pointer-events: none;
+    }
+    .drag-overlay.active { display: flex; }
+
+    /* Scrollbar styling */
+    .photos-grid-container::-webkit-scrollbar,
+    .photos-sidebar::-webkit-scrollbar,
+    .albums-grid-container::-webkit-scrollbar,
+    .memories-container::-webkit-scrollbar,
+    .people-container::-webkit-scrollbar { width: 5px; }
+    .photos-grid-container::-webkit-scrollbar-track,
+    .photos-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .photos-grid-container::-webkit-scrollbar-thumb,
+    .photos-sidebar::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header class="photos-topbar">
+    <a href="dashboard.html" class="topbar-back">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      mCloud
+    </a>
+
+    <div class="topbar-center">
+      <span class="topbar-title">Photos</span>
+    </div>
+
+    <div class="topbar-right">
+      <!-- Dark mode toggle -->
+      <button class="topbar-btn" id="darkModeBtn" title="Toggle dark mode">
+        <svg id="darkModeIcon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span id="darkModeLabel">Dark</span>
+      </button>
+
+      <!-- Upload button -->
+      <button class="topbar-btn accent" id="uploadBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="17 8 12 3 7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Upload
+      </button>
+
+      <!-- Grid size toggle -->
+      <button class="topbar-btn" id="gridSizeBtn" title="Toggle grid size">
+        <svg id="gridSizeIcon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+          <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+          <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+          <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <span id="gridSizeLabel">Small</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Selection Bar -->
+  <div class="selection-bar" id="selectionBar">
+    <span class="selection-bar-count" id="selectionCount">0 selected</span>
+    <div class="selection-bar-actions">
+      <button class="sel-action-btn" id="favouriteSelBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        Favourite
+      </button>
+      <button class="sel-action-btn" id="shareSelBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="2"/>
+          <circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+          <circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="2"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" stroke-width="2"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        Share
+      </button>
+      <button class="sel-action-btn danger" id="deleteSelBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M9 6V4h6v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Delete
+      </button>
+      <button class="sel-action-btn" id="clearSelBtn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="photos-layout">
+
+    <!-- Sidebar -->
+    <aside class="photos-sidebar">
+      <!-- Library -->
+      <div class="sidebar-section-label">Library</div>
+
+      <div class="sidebar-item active" data-sidebar="all-photos">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+            <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        All Photos
+        <span class="sidebar-item-count">2,847</span>
+      </div>
+
+      <div class="sidebar-item" data-sidebar="recents">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <polyline points="12 7 12 12 15 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        Recents
+      </div>
+
+      <div class="sidebar-item" data-sidebar="favourites">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        Favourites
+        <span class="sidebar-item-count">43</span>
+      </div>
+
+      <div class="sidebar-item" data-sidebar="hidden">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </span>
+        Hidden
+      </div>
+
+      <div class="sidebar-item" data-sidebar="recently-deleted">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 6V4h6v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        Recently Deleted
+      </div>
+
+      <!-- Albums -->
+      <div class="sidebar-section-label" style="margin-top: var(--space-3);">Albums</div>
+
+      <div class="sidebar-item" data-sidebar="people">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        People
+      </div>
+
+      <div class="sidebar-item" data-sidebar="places">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        Places
+      </div>
+
+      <div class="sidebar-item" data-sidebar="videos">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <polygon points="23 7 16 12 23 17 23 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        Videos
+      </div>
+
+      <div class="sidebar-item" data-sidebar="selfies">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        Selfies
+      </div>
+
+      <div class="sidebar-item" data-sidebar="landscape">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M8 16l4-8 4 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 20l5-10 5 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="1" y1="20" x2="23" y2="20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </span>
+        Landscape
+      </div>
+
+      <div class="sidebar-item" data-sidebar="shared">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </span>
+        Shared Albums
+      </div>
+
+      <!-- Media Types -->
+      <div class="sidebar-section-label" style="margin-top: var(--space-3);">Media Types</div>
+
+      <div class="sidebar-item" data-sidebar="screenshots">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M9 3v18M15 3v18M3 9h18M3 15h18" stroke="currentColor" stroke-width="1.3" opacity="0.5"/>
+          </svg>
+        </span>
+        Screenshots
+      </div>
+
+      <div class="sidebar-item" data-sidebar="live">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+            <circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/>
+          </svg>
+        </span>
+        Live Photos
+      </div>
+
+      <div class="sidebar-item" data-sidebar="slowmo">
+        <span class="sidebar-item-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <polyline points="12 7 12 12 15 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M8 3.5A9 9 0 0 0 3.5 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        Slow-Mo
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="photos-main">
+      <!-- Tab Bar -->
+      <nav class="photos-tabbar">
+        <button class="tab-btn active" data-tab="photos">Photos</button>
+        <button class="tab-btn" data-tab="albums">Albums</button>
+        <button class="tab-btn" data-tab="memories">Memories</button>
+        <button class="tab-btn" data-tab="people">People</button>
+      </nav>
+
+      <!-- Photos Tab -->
+      <div class="tab-panel active" id="panel-photos">
+        <div class="photos-grid-container" id="photosGridContainer">
+          <!-- April 2026 -->
+          <div class="month-group">
+            <div class="month-header">April 2026</div>
+            <div class="photo-grid" id="photoGridApril"></div>
+          </div>
+          <!-- March 2026 -->
+          <div class="month-group">
+            <div class="month-header">March 2026</div>
+            <div class="photo-grid" id="photoGridMarch"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Albums Tab -->
+      <div class="tab-panel" id="panel-albums">
+        <div class="albums-grid-container">
+          <div class="albums-section-title">My Albums</div>
+          <div class="albums-grid" id="albumsGrid"></div>
+        </div>
+      </div>
+
+      <!-- Memories Tab -->
+      <div class="tab-panel" id="panel-memories">
+        <div class="memories-container" id="memoriesContainer"></div>
+      </div>
+
+      <!-- People Tab -->
+      <div class="tab-panel" id="panel-people">
+        <div class="people-container">
+          <div class="people-grid" id="peopleGrid"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+    <div class="lightbox-topbar">
+      <button class="lightbox-close" id="lightboxClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <span class="lightbox-counter" id="lightboxCounter"></span>
+    </div>
+
+    <div class="lightbox-image-area">
+      <button class="lightbox-nav prev" id="lightboxPrev" aria-label="Previous photo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="lightbox-photo" id="lightboxPhoto"></div>
+
+      <button class="lightbox-nav next" id="lightboxNext" aria-label="Next photo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Filmstrip -->
+    <div class="lightbox-filmstrip" id="lightboxFilmstrip"></div>
+
+    <div class="lightbox-bottombar">
+      <div class="lightbox-info">
+        <div class="lightbox-title" id="lightboxTitle"></div>
+        <div class="lightbox-date" id="lightboxDate"></div>
+      </div>
+      <div class="lightbox-actions">
+        <button class="lightbox-action-btn" id="lightboxLike" title="Favourite">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="lightbox-action-btn" title="Share">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/>
+            <circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+        </button>
+        <button class="lightbox-action-btn" title="Info">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="12" y1="8" x2="12" y2="8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="12" y1="12" x2="12" y2="16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="lightbox-action-btn delete" title="Delete">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M9 6V4h6v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag overlay -->
+  <div class="drag-overlay" id="dragOverlay">
+    <div style="text-align:center;">
+      <div style="font-size:3rem;margin-bottom:12px;">📸</div>
+      Drop photos to upload
+    </div>
+  </div>
+
+  <script>
+    // ── Photo Data ──────────────────────────────────────────────────────
+    const photos = [
+      { emoji: '🏙️', gradient: 'linear-gradient(135deg,#5AC8FA,#007AFF)', title: 'City at night',        date: 'Apr 7, 2026', month: 'April 2026' },
+      { emoji: '🌅', gradient: 'linear-gradient(135deg,#FFD60A,#FF9F0A)', title: 'Morning sunrise',      date: 'Apr 6, 2026', month: 'April 2026' },
+      { emoji: '🌿', gradient: 'linear-gradient(135deg,#30D158,#229944)', title: 'Garden walk',          date: 'Apr 5, 2026', month: 'April 2026' },
+      { emoji: '🍕', gradient: 'linear-gradient(135deg,#FF6B6B,#FF3B30)', title: 'Dinner out',           date: 'Apr 4, 2026', month: 'April 2026' },
+      { emoji: '🎵', gradient: 'linear-gradient(135deg,#BF5AF2,#9B30D9)', title: 'Concert night',        date: 'Apr 3, 2026', month: 'April 2026' },
+      { emoji: '🌊', gradient: 'linear-gradient(135deg,#5AC8FA,#5856D6)', title: 'Beach waves',          date: 'Apr 2, 2026', month: 'April 2026' },
+      { emoji: '🐕', gradient: 'linear-gradient(135deg,#FF9F0A,#FF6B6B)', title: 'Dog park',             date: 'Apr 1, 2026', month: 'April 2026' },
+      { emoji: '⛰️', gradient: 'linear-gradient(135deg,#30D158,#5AC8FA)', title: 'Hiking trail',         date: 'Mar 28, 2026', month: 'March 2026' },
+      { emoji: '✈️', gradient: 'linear-gradient(135deg,#007AFF,#5AC8FA)', title: 'Travel day',           date: 'Mar 25, 2026', month: 'March 2026' },
+      { emoji: '🌆', gradient: 'linear-gradient(135deg,#FF3B30,#FF9F0A)', title: 'Sunset city',          date: 'Mar 22, 2026', month: 'March 2026' },
+      { emoji: '🎉', gradient: 'linear-gradient(135deg,#5856D6,#BF5AF2)', title: 'Birthday celebration', date: 'Mar 18, 2026', month: 'March 2026' },
+      { emoji: '🌺', gradient: 'linear-gradient(135deg,#229944,#30D158)', title: 'Spring flowers',       date: 'Mar 15, 2026', month: 'March 2026' },
+      { emoji: '🌞', gradient: 'linear-gradient(135deg,#FF9F0A,#FFD60A)', title: 'Sunny afternoon',      date: 'Mar 10, 2026', month: 'March 2026' },
+      { emoji: '🏖️', gradient: 'linear-gradient(135deg,#007AFF,#30D158)', title: 'Beach day',            date: 'Mar 5, 2026',  month: 'March 2026' },
+    ];
+
+    const albums = [
+      { emoji: '📷', gradient: 'linear-gradient(135deg,#5AC8FA,#007AFF)', name: 'Camera Roll',    count: '2,847 photos' },
+      { emoji: '📸', gradient: 'linear-gradient(135deg,#8E8E93,#636366)', name: 'Screenshots',    count: '312 photos' },
+      { emoji: '✈️', gradient: 'linear-gradient(135deg,#FF9F0A,#FF6B6B)', name: 'Trips 2026',     count: '428 photos' },
+      { emoji: '👨‍👩‍👧‍👦', gradient: 'linear-gradient(135deg,#30D158,#229944)', name: 'Family',         count: '651 photos' },
+      { emoji: '❤️', gradient: 'linear-gradient(135deg,#FF2D55,#FF6B6B)', name: 'Favourites',     count: '43 photos' },
+      { emoji: '🤝', gradient: 'linear-gradient(135deg,#BF5AF2,#5856D6)', name: 'Shared',         count: '89 photos' },
+    ];
+
+    const memories = [
+      { emoji: '🌊', gradient: 'linear-gradient(135deg,#5AC8FA,#5856D6)', title: 'Beach Days 2026',        subtitle: '14 photos · March–April' },
+      { emoji: '🎉', gradient: 'linear-gradient(135deg,#5856D6,#BF5AF2)', title: 'Celebrations',           subtitle: '8 photos · March 18' },
+      { emoji: '⛰️', gradient: 'linear-gradient(135deg,#30D158,#5AC8FA)', title: 'Weekend Adventures',     subtitle: '22 photos · March–April' },
+    ];
+
+    const people = [
+      { emoji: '👩', gradient: 'linear-gradient(135deg,#FF9F0A,#FF6B6B)', name: 'Sarah',  count: '128 photos' },
+      { emoji: '👨', gradient: 'linear-gradient(135deg,#5AC8FA,#007AFF)', name: 'James',  count: '97 photos' },
+      { emoji: '👧', gradient: 'linear-gradient(135deg,#30D158,#229944)', name: 'Emma',   count: '64 photos' },
+      { emoji: '👦', gradient: 'linear-gradient(135deg,#BF5AF2,#9B30D9)', name: 'Liam',   count: '43 photos' },
+      { emoji: '👴', gradient: 'linear-gradient(135deg,#FF6B6B,#FF3B30)', name: 'Grandpa', count: '31 photos' },
+      { emoji: '👵', gradient: 'linear-gradient(135deg,#FFD60A,#FF9F0A)', name: 'Grandma', count: '29 photos' },
+    ];
+
+    // ── State ────────────────────────────────────────────────────────────
+    let selectedPhotos = new Set();
+    let likedPhotos = new Set();
+    let currentLightboxIndex = -1;
+    let gridSize = 'default'; // 'small' | 'default' | 'large'
+    let isDark = false;
+
+    // ── Render Photo Thumbs ──────────────────────────────────────────────
+    function renderPhotoGrid() {
+      const aprilPhotos = photos.filter(p => p.month === 'April 2026');
+      const marchPhotos = photos.filter(p => p.month === 'March 2026');
+      const aprilGrid = document.getElementById('photoGridApril');
+      const marchGrid = document.getElementById('photoGridMarch');
+
+      aprilGrid.innerHTML = '';
+      marchGrid.innerHTML = '';
+
+      aprilPhotos.forEach((photo, localIdx) => {
+        const globalIdx = photos.indexOf(photo);
+        aprilGrid.appendChild(createThumb(photo, globalIdx));
+      });
+      marchPhotos.forEach((photo, localIdx) => {
+        const globalIdx = photos.indexOf(photo);
+        marchGrid.appendChild(createThumb(photo, globalIdx));
+      });
+    }
+
+    function createThumb(photo, idx) {
+      const div = document.createElement('div');
+      div.className = 'photo-thumb';
+      div.dataset.idx = idx;
+      if (selectedPhotos.has(idx)) div.classList.add('selected');
+
+      div.innerHTML = `
+        <div class="photo-thumb-bg" style="background: ${photo.gradient};">
+          ${photo.emoji}
+        </div>
+        <div class="photo-overlay">
+          <div class="overlay-top">
+            <div class="photo-checkbox" title="Select">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="overlay-bottom">
+            <div class="overlay-icon ${likedPhotos.has(idx) ? 'liked' : ''}" data-action="like" title="Favourite">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="${likedPhotos.has(idx) ? 'currentColor' : 'none'}">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="overlay-icon" data-action="info" title="Info">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.8"/>
+                <line x1="12" y1="8" x2="12" y2="8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="12" y1="12" x2="12" y2="16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Click on checkbox → toggle select
+      div.querySelector('.photo-checkbox').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSelect(idx);
+      });
+
+      // Click on like icon
+      div.querySelector('[data-action="like"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleLike(idx);
+      });
+
+      // Click on thumb → open lightbox
+      div.querySelector('.photo-thumb-bg').addEventListener('click', () => {
+        openLightbox(idx);
+      });
+
+      // Click on overlay (not on icons) → open lightbox
+      div.querySelector('.photo-overlay').addEventListener('click', (e) => {
+        if (e.target.closest('[data-action]') || e.target.closest('.photo-checkbox')) return;
+        openLightbox(idx);
+      });
+
+      return div;
+    }
+
+    function toggleSelect(idx) {
+      if (selectedPhotos.has(idx)) {
+        selectedPhotos.delete(idx);
+      } else {
+        selectedPhotos.add(idx);
+      }
+      updateSelectionUI();
+      renderPhotoGrid();
+    }
+
+    function updateSelectionUI() {
+      const bar = document.getElementById('selectionBar');
+      const count = document.getElementById('selectionCount');
+      if (selectedPhotos.size > 0) {
+        bar.classList.add('visible');
+        count.textContent = `${selectedPhotos.size} photo${selectedPhotos.size !== 1 ? 's' : ''} selected`;
+      } else {
+        bar.classList.remove('visible');
+      }
+    }
+
+    function toggleLike(idx) {
+      if (likedPhotos.has(idx)) {
+        likedPhotos.delete(idx);
+      } else {
+        likedPhotos.add(idx);
+      }
+      renderPhotoGrid();
+      // Update lightbox like button if open
+      if (currentLightboxIndex === idx) {
+        updateLightboxLikeBtn();
+      }
+    }
+
+    // ── Lightbox ──────────────────────────────────────────────────────────
+    function openLightbox(idx) {
+      currentLightboxIndex = idx;
+      const lb = document.getElementById('lightbox');
+      lb.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      renderLightboxPhoto();
+      renderFilmstrip();
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+      currentLightboxIndex = -1;
+    }
+
+    function renderLightboxPhoto() {
+      const photo = photos[currentLightboxIndex];
+      if (!photo) return;
+
+      const photoEl = document.getElementById('lightboxPhoto');
+      photoEl.style.background = photo.gradient;
+      photoEl.textContent = photo.emoji;
+      // Re-animate
+      photoEl.style.animation = 'none';
+      photoEl.offsetHeight;
+      photoEl.style.animation = 'photoSlideIn 0.2s ease';
+
+      document.getElementById('lightboxTitle').textContent = photo.title;
+      document.getElementById('lightboxDate').textContent = photo.date;
+      document.getElementById('lightboxCounter').textContent = `${currentLightboxIndex + 1} of ${photos.length}`;
+      document.getElementById('lightboxPrev').disabled = currentLightboxIndex === 0;
+      document.getElementById('lightboxNext').disabled = currentLightboxIndex === photos.length - 1;
+
+      updateLightboxLikeBtn();
+      updateFilmstripActive();
+    }
+
+    function updateLightboxLikeBtn() {
+      const btn = document.getElementById('lightboxLike');
+      if (likedPhotos.has(currentLightboxIndex)) {
+        btn.classList.add('liked');
+        btn.querySelector('path').setAttribute('fill', 'currentColor');
+      } else {
+        btn.classList.remove('liked');
+        btn.querySelector('path').setAttribute('fill', 'none');
+      }
+    }
+
+    function renderFilmstrip() {
+      const strip = document.getElementById('lightboxFilmstrip');
+      strip.innerHTML = '';
+      photos.forEach((photo, idx) => {
+        const thumb = document.createElement('div');
+        thumb.className = `filmstrip-thumb ${idx === currentLightboxIndex ? 'active' : ''}`;
+        thumb.style.background = photo.gradient;
+        thumb.textContent = photo.emoji;
+        thumb.title = photo.title;
+        thumb.addEventListener('click', () => {
+          currentLightboxIndex = idx;
+          renderLightboxPhoto();
+          updateFilmstripActive();
+        });
+        strip.appendChild(thumb);
+      });
+
+      // Scroll active thumb into view
+      setTimeout(() => {
+        const active = strip.querySelector('.filmstrip-thumb.active');
+        if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+      }, 50);
+    }
+
+    function updateFilmstripActive() {
+      const strip = document.getElementById('lightboxFilmstrip');
+      strip.querySelectorAll('.filmstrip-thumb').forEach((el, idx) => {
+        el.classList.toggle('active', idx === currentLightboxIndex);
+      });
+      const active = strip.querySelector('.filmstrip-thumb.active');
+      if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+    }
+
+    function navigateLightbox(direction) {
+      const next = currentLightboxIndex + direction;
+      if (next >= 0 && next < photos.length) {
+        currentLightboxIndex = next;
+        renderLightboxPhoto();
+        updateFilmstripActive();
+      }
+    }
+
+    // ── Albums ────────────────────────────────────────────────────────────
+    function renderAlbums() {
+      const grid = document.getElementById('albumsGrid');
+      grid.innerHTML = '';
+      albums.forEach(album => {
+        const tile = document.createElement('div');
+        tile.className = 'album-tile';
+        tile.innerHTML = `
+          <div class="album-tile-preview" style="background: ${album.gradient};">${album.emoji}</div>
+          <div class="album-tile-info">
+            <div class="album-tile-name">${album.name}</div>
+            <div class="album-tile-count">${album.count}</div>
+          </div>
+        `;
+        grid.appendChild(tile);
+      });
+    }
+
+    // ── Memories ──────────────────────────────────────────────────────────
+    function renderMemories() {
+      const container = document.getElementById('memoriesContainer');
+      container.innerHTML = '';
+      memories.forEach(mem => {
+        const card = document.createElement('div');
+        card.className = 'memory-card';
+        card.innerHTML = `
+          <div class="memory-card-bg" style="background: ${mem.gradient};">${mem.emoji}</div>
+          <div class="memory-card-info">
+            <div class="memory-card-title">${mem.title}</div>
+            <div class="memory-card-subtitle">${mem.subtitle}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ── People ────────────────────────────────────────────────────────────
+    function renderPeople() {
+      const grid = document.getElementById('peopleGrid');
+      grid.innerHTML = '';
+      people.forEach(person => {
+        const tile = document.createElement('div');
+        tile.className = 'person-tile';
+        tile.innerHTML = `
+          <div class="person-avatar" style="background: ${person.gradient};">${person.emoji}</div>
+          <div class="person-name">${person.name}</div>
+          <div class="person-count">${person.count}</div>
+        `;
+        grid.appendChild(tile);
+      });
+    }
+
+    // ── Tab Switching ─────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // ── Sidebar Items ──────────────────────────────────────────────────────
+    document.querySelectorAll('.sidebar-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    // ── Grid Size Toggle ───────────────────────────────────────────────────
+    const grids = [
+      document.getElementById('photoGridApril'),
+      document.getElementById('photoGridMarch'),
+    ];
+
+    document.getElementById('gridSizeBtn').addEventListener('click', () => {
+      const label = document.getElementById('gridSizeLabel');
+      if (gridSize === 'default') {
+        gridSize = 'small';
+        label.textContent = 'Large';
+        grids.forEach(g => { g.classList.add('grid-small'); g.classList.remove('grid-large'); });
+      } else if (gridSize === 'small') {
+        gridSize = 'large';
+        label.textContent = 'Small';
+        grids.forEach(g => { g.classList.add('grid-large'); g.classList.remove('grid-small'); });
+      } else {
+        gridSize = 'default';
+        label.textContent = 'Small';
+        grids.forEach(g => { g.classList.remove('grid-small', 'grid-large'); });
+      }
+    });
+
+    // ── Dark Mode ──────────────────────────────────────────────────────────
+    document.getElementById('darkModeBtn').addEventListener('click', () => {
+      isDark = !isDark;
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      document.getElementById('darkModeLabel').textContent = isDark ? 'Light' : 'Dark';
+      const icon = document.getElementById('darkModeIcon');
+      if (isDark) {
+        icon.innerHTML = `<circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/><line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`;
+      } else {
+        icon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }
+    });
+
+    // ── Lightbox Controls ─────────────────────────────────────────────────
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    document.getElementById('lightboxPrev').addEventListener('click', () => navigateLightbox(-1));
+    document.getElementById('lightboxNext').addEventListener('click', () => navigateLightbox(1));
+    document.getElementById('lightboxLike').addEventListener('click', () => {
+      if (currentLightboxIndex >= 0) toggleLike(currentLightboxIndex);
+    });
+
+    // Close on backdrop click
+    document.getElementById('lightbox').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('lightbox')) closeLightbox();
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      const lb = document.getElementById('lightbox');
+      if (!lb.classList.contains('open')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navigateLightbox(-1);
+      if (e.key === 'ArrowRight') navigateLightbox(1);
+    });
+
+    // ── Selection Bar Controls ─────────────────────────────────────────────
+    document.getElementById('clearSelBtn').addEventListener('click', () => {
+      selectedPhotos.clear();
+      updateSelectionUI();
+      renderPhotoGrid();
+    });
+
+    document.getElementById('favouriteSelBtn').addEventListener('click', () => {
+      selectedPhotos.forEach(idx => likedPhotos.add(idx));
+      selectedPhotos.clear();
+      updateSelectionUI();
+      renderPhotoGrid();
+    });
+
+    document.getElementById('deleteSelBtn').addEventListener('click', () => {
+      selectedPhotos.clear();
+      updateSelectionUI();
+      renderPhotoGrid();
+    });
+
+    document.getElementById('shareSelBtn').addEventListener('click', () => {
+      selectedPhotos.clear();
+      updateSelectionUI();
+      renderPhotoGrid();
+    });
+
+    // ── Upload drag-and-drop ────────────────────────────────────────────────
+    const dragOverlay = document.getElementById('dragOverlay');
+    let dragCounter = 0;
+
+    document.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragCounter++;
+      dragOverlay.classList.add('active');
+    });
+
+    document.addEventListener('dragleave', () => {
+      dragCounter--;
+      if (dragCounter === 0) dragOverlay.classList.remove('active');
+    });
+
+    document.addEventListener('dragover', (e) => e.preventDefault());
+    document.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      dragOverlay.classList.remove('active');
+    });
+
+    // Upload button (hidden file input)
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.multiple = true;
+      input.click();
+    });
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    renderPhotoGrid();
+    renderAlbums();
+    renderMemories();
+    renderPeople();
+  </script>
+  <script src="app.js"></script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

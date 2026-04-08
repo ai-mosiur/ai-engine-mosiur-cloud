@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Numbers — mCloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Numbers specific ── */
+    .numbers-shell {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - var(--topbar-h));
+      margin-top: var(--topbar-h);
+      overflow: hidden;
+    }
+
+    /* Formula bar */
+    .formula-bar {
+      height: 36px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .cell-ref {
+      width: 70px;
+      height: 100%;
+      border: none;
+      border-right: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      outline: none;
+      padding: 0 8px;
+    }
+
+    .formula-eq {
+      width: 28px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--text-tertiary);
+      border-right: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .formula-input {
+      flex: 1;
+      height: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      font-family: 'Inter', 'Courier New', monospace;
+      font-size: 13px;
+      outline: none;
+      padding: 0 12px;
+    }
+
+    /* Main body */
+    .numbers-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Sheet sidebar */
+    .sheet-sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sheet-sidebar-header {
+      padding: 12px 14px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sheet-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-color);
+      transition: background var(--transition);
+    }
+    .sheet-item:hover { background: var(--bg-tertiary); }
+    .sheet-item.active { background: var(--color-accent-bg); color: var(--color-accent); }
+    .sheet-icon {
+      width: 22px;
+      height: 22px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+    .sheet-item.active .sheet-icon {
+      background: var(--color-accent);
+      color: #fff;
+    }
+    .sheet-add {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-accent);
+      transition: background var(--transition);
+      margin-top: auto;
+      border-top: 1px solid var(--border-color);
+    }
+    .sheet-add:hover { background: var(--color-accent-bg); }
+
+    /* Stats card in sidebar */
+    .sidebar-stats {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border-color);
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 3px 0;
+    }
+    .stat-label { color: var(--text-secondary); }
+    .stat-value { font-weight: 600; color: var(--text-primary); }
+
+    /* Spreadsheet grid */
+    .grid-container {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+    }
+
+    .spreadsheet {
+      border-collapse: collapse;
+      min-width: 100%;
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Column headers */
+    .col-header {
+      height: 28px;
+      min-width: 110px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      letter-spacing: 0.04em;
+      user-select: none;
+    }
+    .col-header.row-num {
+      min-width: 40px;
+      width: 40px;
+      background: var(--bg-secondary);
+    }
+    .col-header.selected-col {
+      background: var(--color-accent-bg);
+      color: var(--color-accent);
+    }
+
+    /* Rows */
+    .grid-row-num {
+      width: 40px;
+      min-width: 40px;
+      height: 28px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      text-align: center;
+      user-select: none;
+      position: sticky;
+      left: 0;
+      z-index: 5;
+    }
+    .grid-row-num.selected-row {
+      background: var(--color-accent-bg);
+      color: var(--color-accent);
+    }
+
+    /* Cell */
+    .cell {
+      height: 28px;
+      min-width: 110px;
+      border: 1px solid var(--border-color);
+      padding: 0 8px;
+      outline: none;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 13px;
+      transition: background var(--transition);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cell:focus, .cell.selected {
+      background: var(--bg-primary);
+      box-shadow: inset 0 0 0 2px var(--color-accent);
+      z-index: 2;
+      position: relative;
+    }
+
+    /* Special cell styles */
+    .cell-header {
+      background: #F0ECFF !important;
+      color: var(--color-accent) !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="dark"] .cell-header { background: #1F1840 !important; }
+
+    .cell-num { text-align: right; }
+    .cell-formula { color: var(--blue); font-style: italic; }
+    .cell-positive { color: var(--green); font-weight: 600; }
+    .cell-negative { color: var(--red); font-weight: 600; }
+    .cell-neutral { color: var(--text-secondary); }
+
+    tr:hover .cell:not(:focus):not(.selected) {
+      background: var(--bg-secondary);
+    }
+    tr:hover .cell-header { background: #E8E0FF !important; }
+    [data-theme="dark"] tr:hover .cell-header { background: #2A1F50 !important; }
+
+    /* Bottom status bar */
+    .numbers-statusbar {
+      height: 30px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 20px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+    .statusbar-stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .statusbar-stat strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="app-page">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="dashboard.html" class="nav-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        mCloud
+      </a>
+    </div>
+    <div class="topbar-center">
+      <svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:-2px; margin-right:4px;">
+        <rect x="3" y="3" width="18" height="18" rx="3" fill="var(--green)"/>
+        <rect x="7" y="8" width="4" height="2.5" rx="0.5" fill="white"/>
+        <rect x="13" y="8" width="4" height="2.5" rx="0.5" fill="white"/>
+        <rect x="7" y="13" width="4" height="2.5" rx="0.5" fill="white"/>
+        <rect x="13" y="13" width="4" height="2.5" rx="0.5" fill="white"/>
+      </svg>
+      Numbers
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-primary btn-sm" onclick="showToast('Spreadsheet saved')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+        Save
+      </button>
+      <button class="nav-btn" data-theme-toggle title="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="numbers-shell">
+    <!-- Formula bar -->
+    <div class="formula-bar">
+      <input class="cell-ref" id="cell-ref" value="A1" readonly />
+      <div class="formula-eq">ƒ</div>
+      <input class="formula-input" id="formula-input" value="Q1 Revenue Tracker" readonly placeholder="Select a cell..." />
+    </div>
+
+    <div class="numbers-body">
+      <!-- Sheet sidebar -->
+      <aside class="sheet-sidebar">
+        <div class="sheet-sidebar-header">Sheets</div>
+
+        <div class="sheet-item active" onclick="switchSheet(1, this)">
+          <div class="sheet-icon">1</div>
+          Sheet 1
+        </div>
+        <div class="sheet-item" onclick="switchSheet(2, this)">
+          <div class="sheet-icon">2</div>
+          Sheet 2
+        </div>
+
+        <div style="flex:1;"></div>
+
+        <div class="sidebar-stats" id="sidebar-stats">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-tertiary); margin-bottom:8px;">Selection</div>
+          <div class="stat-row">
+            <span class="stat-label">Sum</span>
+            <span class="stat-value" id="stat-sum">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Average</span>
+            <span class="stat-value" id="stat-avg">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Count</span>
+            <span class="stat-value" id="stat-count">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Min</span>
+            <span class="stat-value" id="stat-min">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Max</span>
+            <span class="stat-value" id="stat-max">—</span>
+          </div>
+        </div>
+
+        <div class="sheet-add" onclick="showToast('New sheet added')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Sheet
+        </div>
+      </aside>
+
+      <!-- Grid -->
+      <div class="grid-container" id="grid-container">
+        <table class="spreadsheet" id="spreadsheet">
+          <thead>
+            <tr>
+              <th class="col-header row-num"></th>
+              <th class="col-header" id="col-A">A</th>
+              <th class="col-header" id="col-B">B</th>
+              <th class="col-header" id="col-C">C</th>
+              <th class="col-header" id="col-D">D</th>
+              <th class="col-header" id="col-E">E</th>
+              <th class="col-header" id="col-F">F</th>
+              <th class="col-header" id="col-G">G</th>
+              <th class="col-header" id="col-H">H</th>
+            </tr>
+          </thead>
+          <tbody id="grid-body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="numbers-statusbar">
+      <div class="statusbar-stat">
+        Sum: <strong id="bottom-sum">$0</strong>
+      </div>
+      <div class="statusbar-stat">
+        Average: <strong id="bottom-avg">$0</strong>
+      </div>
+      <div class="statusbar-stat">
+        Count: <strong id="bottom-count">0</strong>
+      </div>
+      <div style="margin-left:auto; color:var(--text-tertiary); font-size:11px;" id="grid-info">20 rows × 8 columns</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Spreadsheet data
+    const sheetData = {
+      1: [
+        // Row 1: Title
+        ['Q1 Revenue Tracker', '', '', '', '', '', '', ''],
+        // Row 2: empty
+        ['', '', '', '', '', '', '', ''],
+        // Row 3: Headers
+        ['Month', 'Revenue', 'Expenses', 'Profit', 'Growth %', 'Margin %', 'Target', 'vs Target'],
+        // Row 4: Jan
+        ['January', '142500', '98200', '=B4-C4', '—', '=D4/B4*100', '140000', '=B4-G4'],
+        // Row 5: Feb
+        ['February', '158300', '104600', '=B5-C5', '=((B5-B4)/B4*100)', '=D5/B5*100', '155000', '=B5-G5'],
+        // Row 6: Mar
+        ['March', '171800', '109400', '=B6-C6', '=((B6-B5)/B5*100)', '=D6/B6*100', '165000', '=B6-G6'],
+        // Row 7: Q1 Total
+        ['Q1 Total', '=SUM(B4:B6)', '=SUM(C4:C6)', '=SUM(D4:D6)', '', '=D7/B7*100', '=SUM(G4:G6)', '=B7-G7'],
+        // Row 8: empty
+        ['', '', '', '', '', '', '', ''],
+        // Row 9: Section header
+        ['Q2 Projection', '', '', '', '', '', '', ''],
+        // Row 10: Apr
+        ['April', '185000', '112000', '73000', '', '', '180000', '5000'],
+        // Row 11: May
+        ['May', '197000', '118000', '79000', '', '', '190000', '7000'],
+        // Row 12: Jun
+        ['June', '214000', '125000', '89000', '', '', '205000', '9000'],
+        // Row 13: Q2 Total
+        ['Q2 Total', '596000', '355000', '241000', '', '', '575000', '21000'],
+        // Rows 14-20: empty
+        ['', '', '', '', '', '', '', ''],
+        ['Annual Run Rate', '=B7*4', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+      ],
+      2: [
+        ['Team Expenses', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['Category', 'Jan', 'Feb', 'Mar', 'Q1 Total', 'Budget', 'Variance', ''],
+        ['Engineering', '45000', '47500', '49000', '=SUM(B4:D4)', '145000', '=E4-F4', ''],
+        ['Design', '18000', '18000', '20000', '=SUM(B5:D5)', '55000', '=E5-F5', ''],
+        ['Marketing', '22000', '25000', '28000', '=SUM(B6:D6)', '72000', '=E6-F6', ''],
+        ['Infrastructure', '8200', '9100', '7400', '=SUM(B7:D7)', '26000', '=E7-F7', ''],
+        ['Operations', '5000', '5000', '5000', '=SUM(B8:D8)', '15000', '=E8-F8', ''],
+        ['Total', '=SUM(B4:B8)', '=SUM(C4:C8)', '=SUM(D4:D8)', '=SUM(E4:E8)', '=SUM(F4:F8)', '=SUM(G4:G8)', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', ''],
+      ]
+    };
+
+    // Computed values (formulas evaluated)
+    const computedValues = {
+      'B4': 142500, 'C4': 98200, 'D4': 44300, 'E4': '—', 'F4': '31.1%', 'G4': 140000, 'H4': 2500,
+      'B5': 158300, 'C5': 104600, 'D5': 53700, 'E5': '11.1%', 'F5': '33.9%', 'G5': 155000, 'H5': 3300,
+      'B6': 171800, 'C6': 109400, 'D6': 62400, 'E6': '8.5%', 'F6': '36.3%', 'G6': 165000, 'H6': 6800,
+      'B7': 472600, 'C7': 312200, 'D7': 160400, 'F7': '33.9%', 'G7': 460000, 'H7': 12600,
+      'B15': 1890400
+    };
+
+    let currentSheet = 1;
+    let selectedCells = [];
+    let selectedRef = 'A1';
+
+    function buildGrid(sheet) {
+      const data = sheetData[sheet];
+      const tbody = document.getElementById('grid-body');
+      tbody.innerHTML = '';
+
+      data.forEach((row, ri) => {
+        const tr = document.createElement('tr');
+
+        // Row number
+        const td0 = document.createElement('td');
+        td0.className = 'grid-row-num';
+        td0.id = `row-${ri+1}`;
+        td0.textContent = ri + 1;
+        tr.appendChild(td0);
+
+        const cols = ['A','B','C','D','E','F','G','H'];
+        row.forEach((val, ci) => {
+          const td = document.createElement('td');
+          td.className = 'cell';
+          td.contentEditable = 'true';
+          td.id = `cell-${cols[ci]}${ri+1}`;
+          td.dataset.row = ri + 1;
+          td.dataset.col = cols[ci];
+          td.dataset.raw = val;
+
+          // Determine display value
+          let display = val;
+          const ref = `${cols[ci]}${ri+1}`;
+          if (computedValues[ref] !== undefined) display = computedValues[ref];
+          if (typeof display === 'string' && display.startsWith('=')) display = val; // keep formula as-is
+
+          td.textContent = display;
+
+          // Styling
+          if (ri === 0) {
+            td.style.fontWeight = '700';
+            td.style.fontSize = '15px';
+            if (ci === 0) td.style.color = 'var(--color-accent)';
+          }
+          if (ri === 2) { td.classList.add('cell-header'); }
+          if (ri === 6 || ri === 12) {
+            td.style.fontWeight = '700';
+            td.style.borderTop = '2px solid var(--border-color)';
+          }
+          if (ri === 8) {
+            if (ci === 0) { td.style.fontWeight = '600'; td.style.color = 'var(--text-secondary)'; }
+          }
+
+          // Number formatting
+          if ([1,2,3,6,7].includes(ci) && ri >= 3) {
+            td.classList.add('cell-num');
+            const num = parseFloat(String(display).replace(/[$,%]/g, ''));
+            if (!isNaN(num) && display !== '' && !String(display).startsWith('=')) {
+              if (ci === 4) {
+                // Growth %
+                td.textContent = String(display);
+                if (num > 0) td.classList.add('cell-positive');
+                else if (num < 0) td.classList.add('cell-negative');
+              } else if (ci === 5) {
+                td.textContent = String(display);
+              } else if (ci === 7) {
+                // vs Target
+                td.textContent = num >= 0 ? `+$${Math.abs(num).toLocaleString()}` : `-$${Math.abs(num).toLocaleString()}`;
+                td.classList.add(num >= 0 ? 'cell-positive' : 'cell-negative');
+              } else {
+                td.textContent = `$${num.toLocaleString()}`;
+              }
+            }
+          }
+
+          td.addEventListener('click', () => selectCell(ref, td, val));
+          td.addEventListener('focus', () => selectCell(ref, td, val));
+          td.addEventListener('blur', (e) => handleCellEdit(ref, td, e.target.textContent));
+
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      updateStatusBar();
+    }
+
+    function selectCell(ref, el, rawVal) {
+      // Deselect all
+      document.querySelectorAll('.cell.selected').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.col-header.selected-col').forEach(c => c.classList.remove('selected-col'));
+      document.querySelectorAll('.grid-row-num.selected-row').forEach(r => r.classList.remove('selected-row'));
+
+      el.classList.add('selected');
+      selectedRef = ref;
+
+      // Update header
+      const col = ref[0];
+      const row = ref.slice(1);
+      const colHeader = document.getElementById(`col-${col}`);
+      const rowHeader = document.getElementById(`row-${row}`);
+      if (colHeader) colHeader.classList.add('selected-col');
+      if (rowHeader) rowHeader.classList.add('selected-row');
+
+      // Update formula bar
+      document.getElementById('cell-ref').value = ref;
+      const raw = el.dataset.raw || rawVal || '';
+      document.getElementById('formula-input').value = raw.startsWith('=') ? raw : el.textContent;
+
+      updateStatusBar(el);
+    }
+
+    function handleCellEdit(ref, el, newVal) {
+      el.dataset.raw = newVal;
+      updateStatusBar(el);
+      document.getElementById('formula-input').value = newVal;
+    }
+
+    function updateStatusBar(el) {
+      // Collect numeric values
+      const numericCells = [];
+      document.querySelectorAll('.cell.selected').forEach(c => {
+        const txt = c.textContent.replace(/[$,+]/g, '').replace('%','');
+        const n = parseFloat(txt);
+        if (!isNaN(n)) numericCells.push(n);
+      });
+
+      // Also check current selected cell
+      if (el) {
+        const txt = el.textContent.replace(/[$,+]/g, '').replace('%','');
+        const n = parseFloat(txt);
+        if (!isNaN(n) && !numericCells.includes(n)) numericCells.push(n);
+      }
+
+      if (numericCells.length > 0) {
+        const sum = numericCells.reduce((a,b) => a+b, 0);
+        const avg = sum / numericCells.length;
+        const min = Math.min(...numericCells);
+        const max = Math.max(...numericCells);
+        const fmt = n => n >= 1000 ? `$${n.toLocaleString()}` : n.toFixed(1);
+        document.getElementById('stat-sum').textContent = fmt(sum);
+        document.getElementById('stat-avg').textContent = fmt(avg);
+        document.getElementById('stat-count').textContent = numericCells.length;
+        document.getElementById('stat-min').textContent = fmt(min);
+        document.getElementById('stat-max').textContent = fmt(max);
+        document.getElementById('bottom-sum').textContent = fmt(sum);
+        document.getElementById('bottom-avg').textContent = fmt(avg);
+        document.getElementById('bottom-count').textContent = numericCells.length;
+      } else {
+        ['stat-sum','stat-avg','stat-min','stat-max'].forEach(id => document.getElementById(id).textContent = '—');
+        document.getElementById('stat-count').textContent = '0';
+        document.getElementById('bottom-sum').textContent = '$0';
+        document.getElementById('bottom-avg').textContent = '$0';
+        document.getElementById('bottom-count').textContent = '0';
+      }
+    }
+
+    function switchSheet(n, el) {
+      document.querySelectorAll('.sheet-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+      currentSheet = n;
+      buildGrid(n);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      buildGrid(1);
+    });
+  </script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mCloud Calendar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── App Shell ── */
+    .app-topbar {
+      height: var(--topbar-h);
+      background: var(--bg-topbar);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+    .app-body {
+      display: flex;
+      height: calc(100vh - var(--topbar-h));
+      padding-top: var(--topbar-h);
+      overflow: hidden;
+    }
+    .app-sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 10px 0;
+      transition: background var(--transition-slow), border-color var(--transition-slow);
+    }
+    .app-sidebar .sidebar-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 16px; cursor: pointer; font-size: 13px; font-weight: 500;
+      color: var(--text-primary); transition: background 0.15s;
+    }
+    .app-sidebar .sidebar-item:hover { background: var(--bg-tertiary); }
+    .app-sidebar .sidebar-item.active { background: var(--color-accent-bg); color: var(--color-accent); }
+    .app-sidebar .item-icon { width: 18px; height: 18px; flex-shrink: 0; }
+    .app-sidebar .sidebar-divider { height: 1px; background: var(--border-color); margin: 8px 0; }
+    .app-sidebar .sidebar-section-label {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-tertiary); padding: 10px 16px 4px;
+    }
+    .app-sidebar .tag-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .app-main {
+      flex: 1; padding: 0; overflow: hidden;
+      display: flex; flex-direction: column;
+      background: var(--bg-primary);
+      transition: background var(--transition-slow);
+    }
+    .back-btn-label { font-size: 13px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 6px 12px; border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background: var(--bg-card); color: var(--text-primary);
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn:hover { background: var(--bg-secondary); }
+    .btn.btn-primary {
+      background: var(--color-accent); color: #fff;
+      border-color: var(--color-accent);
+    }
+    .btn.btn-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+
+    /* ── Mini calendar sidebar ── */
+    .mini-cal { padding: 12px 12px 8px; }
+    .mini-cal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .mini-cal-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .mini-cal-nav {
+      width: 22px; height: 22px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color); background: transparent;
+      color: var(--text-secondary); cursor: pointer; font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mini-cal-nav:hover { background: var(--bg-tertiary); }
+    .mini-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+    }
+    .mini-cal-grid .day-label {
+      font-size: 10px; font-weight: 600; color: var(--text-tertiary);
+      text-align: center; padding: 3px 0;
+    }
+    .mini-cal-grid .mini-day {
+      font-size: 11px; text-align: center;
+      padding: 3px 0; cursor: pointer; border-radius: 50%;
+      color: var(--text-secondary);
+    }
+    .mini-cal-grid .mini-day:hover { background: var(--bg-tertiary); }
+    .mini-cal-grid .mini-day.today {
+      background: var(--color-accent); color: #fff; font-weight: 700;
+      border-radius: 50%;
+    }
+    .mini-cal-grid .mini-day.other-month { opacity: 0.35; }
+
+    /* ── Cal check items (sidebar calendar toggles) ── */
+    .cal-check-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 16px; cursor: pointer; user-select: none;
+    }
+    .cal-check-item input[type="checkbox"] { display: none; }
+    .cal-check-box {
+      width: 14px; height: 14px; border-radius: 3px;
+      border: 2px solid currentColor;
+      flex-shrink: 0; position: relative;
+    }
+    .cal-check-item input:checked + .cal-check-box::after {
+      content: '';
+      position: absolute; inset: 1px;
+      background: currentColor;
+      border-radius: 1px;
+    }
+
+    /* ── Cal Content Area ── */
+    .cal-content {
+      display: flex; flex-direction: column;
+      flex: 1; overflow-y: auto; padding: 20px 24px;
+    }
+    .cal-grid-container { flex: 1; min-height: 0; }
+
+    /* ── Cal main header ── */
+    .cal-main-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 0; margin-bottom: 8px;
+    }
+    .cal-month-label {
+      font-size: 20px; font-weight: 700;
+      color: var(--text-primary); letter-spacing: -0.02em;
+    }
+    .cal-month-nav { display: flex; gap: 4px; }
+    .cal-nav-btn {
+      width: 30px; height: 30px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-card); color: var(--text-secondary);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .cal-nav-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+    .cal-header-right { display: flex; gap: 6px; align-items: center; }
+
+    /* ── View tabs ── */
+    .view-tabs {
+      display: flex; border: 1px solid var(--border-color);
+      border-radius: var(--radius-md); overflow: hidden;
+    }
+    .view-tab {
+      padding: 5px 12px; font-size: 12px; font-weight: 500;
+      border: none; background: transparent; cursor: pointer;
+      color: var(--text-secondary); transition: all 0.12s;
+    }
+    .view-tab + .view-tab { border-left: 1px solid var(--border-color); }
+    .view-tab.active { background: var(--color-accent); color: #fff; }
+    .view-tab:hover:not(.active) { background: var(--bg-secondary); color: var(--text-primary); }
+
+    /* ── Cal Grid (month view) ── */
+    .cal-grid-header {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      text-align: center; font-size: 12px; font-weight: 600;
+      color: var(--text-secondary); padding: 8px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border-left: 1px solid var(--border-color);
+    }
+    .cal-grid .cal-day {
+      min-height: 100px;
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      padding: 4px 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.12s;
+      overflow: hidden;
+    }
+    .cal-grid .cal-day:hover { background: var(--bg-secondary); }
+    .cal-day .day-num {
+      font-weight: 600; margin-bottom: 2px;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px;
+      color: var(--text-primary);
+    }
+    .cal-day.today .day-num {
+      background: var(--color-accent); color: #fff;
+      border-radius: 50%;
+    }
+    .cal-day.other-month { opacity: 0.4; }
+    .cal-day.other-month:hover { opacity: 0.6; }
+    .cal-day .event-chip {
+      font-size: 10px; padding: 1px 5px;
+      border-radius: 3px; margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      cursor: pointer; display: block;
+      color: #fff; font-weight: 500;
+    }
+    .cal-day .event-chip:hover { filter: brightness(1.1); }
+    .cal-day .more-chip {
+      font-size: 10px; color: var(--text-tertiary);
+      padding: 1px 4px; cursor: pointer;
+    }
+
+    /* ── Event Popup ── */
+    .event-popup {
+      position: fixed;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 20px;
+      width: 340px;
+      z-index: 200;
+      display: none;
+    }
+    .event-popup.open { display: block; }
+    .popup-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .popup-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+    .popup-close {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: none; background: var(--bg-tertiary);
+      color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 12px;
+    }
+    .popup-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--text-primary);
+      margin-bottom: 8px; min-height: 18px;
+    }
+    .popup-actions {
+      display: flex; gap: 8px; margin-top: 14px;
+      padding-top: 12px; border-top: 1px solid var(--border-color);
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg-overlay);
+      display: none; align-items: center; justify-content: center;
+      z-index: 500;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      width: min(480px, calc(100vw - 40px));
+      box-shadow: var(--shadow-xl);
+      max-height: calc(100vh - 60px);
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+    .modal-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: none; background: var(--bg-tertiary);
+      color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .modal-close:hover { background: var(--border-color); }
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 8px;
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* ── Form elements ── */
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 8px 10px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--color-accent);
+    }
+    .form-textarea { resize: vertical; min-height: 72px; }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+
+    /* ── Dark mode ── */
+    [data-theme="dark"] .cal-nav-btn { background: var(--bg-card); border-color: var(--border-color); }
+    [data-theme="dark"] .view-tabs { border-color: var(--border-color); }
+    [data-theme="dark"] .view-tab + .view-tab { border-color: var(--border-color); }
+    [data-theme="dark"] .event-popup { background: var(--bg-card); border-color: var(--border-color); }
+    [data-theme="dark"] .modal-box { background: var(--bg-card); }
+    [data-theme="dark"] .form-input,
+    [data-theme="dark"] .form-select,
+    [data-theme="dark"] .form-textarea { background: var(--bg-tertiary); border-color: var(--border-color); color: var(--text-primary); }
+    [data-theme="dark"] .btn { background: var(--bg-card); border-color: var(--border-color); color: var(--text-primary); }
+    [data-theme="dark"] .btn.btn-primary { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+    [data-theme="dark"] .cal-grid { border-color: var(--border-color); }
+    [data-theme="dark"] .cal-grid .cal-day { border-color: var(--border-color); }
+    [data-theme="dark"] .cal-grid-header { border-color: var(--border-color); }
+    [data-theme="dark"] .popup-close { background: var(--bg-tertiary); }
+    [data-theme="dark"] .mini-cal-nav { border-color: var(--border-color); background: transparent; }
+    [data-theme="dark"] .modal-footer { border-color: var(--border-color); }
+    [data-theme="dark"] .popup-actions { border-color: var(--border-color); }
+  </style>
+</head>
+<body class="app-page" id="calendar-page">
+<div class="app-shell">
+
+  <!-- Top Bar -->
+  <header class="app-topbar">
+    <div class="topbar-left">
+      <a href="dashboard.html" class="nav-btn" style="text-decoration:none;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="back-btn-label">mCloud</span>
+      </a>
+    </div>
+    <div class="topbar-center">Calendar</div>
+    <div class="topbar-right">
+      <button class="btn btn-primary" id="btn-new-event" style="height:30px;padding:0 12px;font-size:0.8rem;">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        New Event
+      </button>
+      <button class="nav-btn" data-theme-toggle title="Toggle dark mode" aria-label="Toggle dark mode">
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M13.5 10A5.5 5.5 0 016 2.5a5.5 5.5 0 100 11 5.5 5.5 0 007.5-3.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- Sidebar -->
+    <nav class="app-sidebar" id="cal-sidebar">
+
+      <!-- Mini calendar -->
+      <div class="mini-cal">
+        <div class="mini-cal-header">
+          <span class="mini-cal-title">April 2026</span>
+          <div style="display:flex;gap:2px;">
+            <button class="mini-cal-nav">‹</button>
+            <button class="mini-cal-nav">›</button>
+          </div>
+        </div>
+        <div class="mini-cal-grid" id="mini-cal-grid"></div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">My Calendars</div>
+
+      <label class="cal-check-item" data-cal="Personal">
+        <input type="checkbox" checked />
+        <div class="cal-check-box" style="color:#6C47FF;border-color:#6C47FF;"></div>
+        <span style="font-size:0.83rem;">Personal</span>
+      </label>
+      <label class="cal-check-item" data-cal="Work">
+        <input type="checkbox" checked />
+        <div class="cal-check-box" style="color:#3B82F6;border-color:#3B82F6;"></div>
+        <span style="font-size:0.83rem;">Work</span>
+      </label>
+      <label class="cal-check-item" data-cal="Family">
+        <input type="checkbox" checked />
+        <div class="cal-check-box" style="color:#22C55E;border-color:#22C55E;"></div>
+        <span style="font-size:0.83rem;">Family</span>
+      </label>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Other</div>
+
+      <label class="cal-check-item" data-cal="Birthdays">
+        <input type="checkbox" checked />
+        <div class="cal-check-box" style="color:#F97316;border-color:#F97316;"></div>
+        <span style="font-size:0.83rem;">Birthdays</span>
+      </label>
+      <label class="cal-check-item" data-cal="Holidays">
+        <input type="checkbox" checked />
+        <div class="cal-check-box" style="color:#EF4444;border-color:#EF4444;"></div>
+        <span style="font-size:0.83rem;">Holidays</span>
+      </label>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-item">
+        <svg class="item-icon" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="4" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M6 2v3M12 2v3M2 8h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Add Calendar
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <div class="cal-content">
+
+        <!-- Calendar Header -->
+        <div class="cal-main-header">
+          <div class="cal-month-nav">
+            <button class="cal-nav-btn" id="cal-prev">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="cal-nav-btn" id="cal-next">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <span class="cal-month-label" id="cal-month-label">April 2026</span>
+
+          <div class="cal-header-right">
+            <button class="btn" id="cal-today" style="height:30px;padding:0 12px;font-size:0.8rem;">Today</button>
+            <div class="view-tabs">
+              <button class="view-tab active">Month</button>
+              <button class="view-tab">Week</button>
+              <button class="view-tab">Day</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Month Grid -->
+        <div class="cal-grid-container">
+          <div class="cal-grid-header">
+            <div class="cal-day-header">Sun</div>
+            <div class="cal-day-header">Mon</div>
+            <div class="cal-day-header">Tue</div>
+            <div class="cal-day-header">Wed</div>
+            <div class="cal-day-header">Thu</div>
+            <div class="cal-day-header">Fri</div>
+            <div class="cal-day-header">Sat</div>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+
+      </div>
+    </main>
+  </div><!-- end app-body -->
+
+</div><!-- end app-shell -->
+
+<!-- Event Detail Popup -->
+<div class="event-popup" id="event-popup">
+  <div class="popup-header">
+    <span class="popup-title"></span>
+    <button class="popup-close" id="popup-close">✕</button>
+  </div>
+  <div class="popup-row">
+    <div class="popup-dot" style="flex-shrink:0;width:8px;height:8px;border-radius:50%;"></div>
+    <span id="popup-time" style="font-weight:500;"></span>
+    &nbsp;·&nbsp;
+    <span id="popup-cal" style="color:var(--text-tertiary);"></span>
+  </div>
+  <div class="popup-row">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="flex-shrink:0;opacity:0.5;"><path d="M6.5 1C4.57 1 3 2.57 3 4.5c0 2.73 3.5 7.5 3.5 7.5S10 7.23 10 4.5C10 2.57 8.43 1 6.5 1zm0 4.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" fill="currentColor"/></svg>
+    <span id="popup-loc"></span>
+  </div>
+  <div class="popup-row">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="flex-shrink:0;opacity:0.5;"><path d="M1 2.5A1.5 1.5 0 012.5 1h8A1.5 1.5 0 0112 2.5v8A1.5 1.5 0 0110.5 12h-8A1.5 1.5 0 011 10.5v-8zM4 5.5h5M4 7.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    <span id="popup-notes" style="color:var(--text-secondary);font-size:0.8rem;"></span>
+  </div>
+  <div class="popup-actions">
+    <button class="btn btn-primary" style="height:28px;font-size:0.78rem;flex:1;">Edit</button>
+    <button class="btn" style="height:28px;font-size:0.78rem;color:#EF4444;border-color:#EF4444;">Delete</button>
+  </div>
+</div>
+
+<!-- New Event Modal -->
+<div class="modal-overlay" id="new-event-modal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">New Event</span>
+      <button class="modal-close" onclick="closeModal('new-event-modal')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input type="text" class="form-input" id="new-event-title" placeholder="Event name…" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="new-event-date" value="2026-04-08" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Calendar</label>
+        <select class="form-select" id="new-event-cal">
+          <option value="Personal">Personal</option>
+          <option value="Work">Work</option>
+          <option value="Family">Family</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Start Time</label>
+        <input type="time" class="form-input" id="new-event-start" value="09:00" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">End Time</label>
+        <input type="time" class="form-input" id="new-event-end" value="10:00" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Location</label>
+      <input type="text" class="form-input" id="new-event-loc" placeholder="Add location…" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="new-event-notes" placeholder="Add notes…"></textarea>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div class="form-label">Color</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#6C47FF;cursor:pointer;outline:3px solid transparent;" title="Violet"></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#3B82F6;cursor:pointer;" title="Blue"></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#22C55E;cursor:pointer;" title="Green"></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#EF4444;cursor:pointer;" title="Red"></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#F97316;cursor:pointer;" title="Orange"></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#F59E0B;cursor:pointer;" title="Yellow"></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#EC4899;cursor:pointer;" title="Pink"></div>
+        <div style="width:22px;height:22px;border-radius:50%;background:#6366F1;cursor:pointer;" title="Indigo"></div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('new-event-modal')">Cancel</button>
+      <button class="btn btn-primary" id="save-event-btn">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+// ── Calendar Page: Dynamic rendering for April 2026 ──────────────────────────
+
+(function() {
+  // ── Constants ──────────────────────────────────────────────────────────────
+  const TODAY = { year: 2026, month: 3, day: 8 }; // April = month index 3
+  const MONTH_NAMES = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+  const DAY_LABELS_MINI = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  // Current view state
+  let viewYear  = 2026;
+  let viewMonth = 3; // 0-indexed (3 = April)
+
+  // ── Event data ─────────────────────────────────────────────────────────────
+  // Each event: { day, name, color, time, cal, loc, notes }
+  const EVENTS = [
+    { month:3, day:1,  name:'Team Standup',     color:'#3B82F6', time:'9:00 AM – 9:30 AM',  cal:'Work',     loc:'Zoom',                        notes:'Daily sync with the engineering team.' },
+    { month:3, day:3,  name:'Dentist',           color:'#F97316', time:'2:00 PM – 3:00 PM',  cal:'Personal', loc:'City Dental, 22 Main St',     notes:'Regular checkup and cleaning.' },
+    { month:3, day:7,  name:'Sprint Review',     color:'#3B82F6', time:'3:00 PM – 4:30 PM',  cal:'Work',     loc:'Conference Room B',            notes:'End of sprint 14 demo.' },
+    { month:3, day:8,  name:'Design Sync',       color:'#6C47FF', time:'11:00 AM – 12:00 PM',cal:'Work',     loc:'Google Meet',                  notes:'Weekly design team sync.' },
+    { month:3, day:8,  name:'Lunch w/ Sarah',    color:'#22C55E', time:'1:00 PM – 2:00 PM',  cal:'Personal', loc:'The Garden Café',              notes:'Catch up over lunch.' },
+    { month:3, day:10, name:"Mom's Birthday",    color:'#F97316', time:'All day',             cal:'Family',   loc:'',                            notes:'Buy flowers and call mom!' },
+    { month:3, day:12, name:'Movie Night',       color:'#22C55E', time:'7:00 PM – 10:00 PM', cal:'Personal', loc:'Cineworld IMAX',               notes:'Watching the new sci-fi release.' },
+    { month:3, day:15, name:'Tax Deadline',      color:'#EF4444', time:'All day',             cal:'Personal', loc:'',                            notes:'File 2025 taxes – remember receipts.' },
+    { month:3, day:18, name:'Team Offsite',      color:'#3B82F6', time:'9:00 AM – 6:00 PM',  cal:'Work',     loc:'Marriott Downtown',            notes:'Full-day team planning and workshops.' },
+    { month:3, day:22, name:'Eid al-Fitr',       color:'#EF4444', time:'All day',             cal:'Personal', loc:'',                            notes:'Eid celebrations with family.' },
+    { month:3, day:25, name:'Product Launch',    color:'#6C47FF', time:'10:00 AM – 12:00 PM',cal:'Work',     loc:'Main Auditorium',              notes:'v2.0 public launch event.' },
+    { month:3, day:28, name:'Quarterly Review',  color:'#3B82F6', time:'2:00 PM – 4:00 PM',  cal:'Work',     loc:'Board Room',                  notes:'Q1 2026 financial and roadmap review.' },
+    { month:3, day:30, name:'Month-end Close',   color:'#6C47FF', time:'All day',             cal:'Work',     loc:'',                            notes:'Finalize all April deliverables.' },
+  ];
+
+  // Get events for a given year/month/day
+  function getEvents(year, month, day) {
+    // For this demo, events are only in April 2026
+    if (year === 2026 && month === 3) {
+      return EVENTS.filter(e => e.month === 3 && e.day === day);
+    }
+    return [];
+  }
+
+  // ── Render the main month grid ─────────────────────────────────────────────
+  function renderCalGrid(year, month) {
+    const grid = document.getElementById('cal-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    // Update header label
+    const label = document.getElementById('cal-month-label');
+    if (label) label.textContent = MONTH_NAMES[month] + ' ' + year;
+
+    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    // Total cells — always 6 rows × 7 cols = 42
+    const totalCells = 42;
+
+    for (let i = 0; i < totalCells; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-day';
+
+      let dayNum, cellYear, cellMonth, isOtherMonth = false;
+
+      if (i < firstDay) {
+        // Leading days from previous month
+        dayNum = daysInPrevMonth - firstDay + i + 1;
+        cellMonth = month - 1;
+        cellYear = year;
+        if (cellMonth < 0) { cellMonth = 11; cellYear--; }
+        isOtherMonth = true;
+      } else if (i - firstDay >= daysInMonth) {
+        // Trailing days from next month
+        dayNum = i - firstDay - daysInMonth + 1;
+        cellMonth = month + 1;
+        cellYear = year;
+        if (cellMonth > 11) { cellMonth = 0; cellYear++; }
+        isOtherMonth = true;
+      } else {
+        dayNum = i - firstDay + 1;
+        cellMonth = month;
+        cellYear = year;
+      }
+
+      if (isOtherMonth) cell.classList.add('other-month');
+
+      // Mark today
+      if (cellYear === TODAY.year && cellMonth === TODAY.month && dayNum === TODAY.day) {
+        cell.classList.add('today');
+      }
+
+      // Day number
+      const numSpan = document.createElement('span');
+      numSpan.className = 'day-num';
+      numSpan.textContent = dayNum;
+      cell.appendChild(numSpan);
+
+      // Render events (only current month cells get events)
+      const evts = getEvents(cellYear, cellMonth, dayNum);
+      evts.forEach((evt, idx) => {
+        if (idx < 3) {
+          const chip = document.createElement('div');
+          chip.className = 'event-chip';
+          chip.style.background = evt.color;
+          chip.style.color = '#fff';
+          chip.textContent = evt.name;
+          chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showEventPopup(e, evt, cellYear, cellMonth, dayNum);
+          });
+          cell.appendChild(chip);
+        } else if (idx === 3) {
+          const more = document.createElement('div');
+          more.className = 'more-chip';
+          more.textContent = '+' + (evts.length - 3) + ' more';
+          cell.appendChild(more);
+        }
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  // ── Render the mini sidebar calendar ───────────────────────────────────────
+  function renderMiniCal(year, month) {
+    const miniGrid = document.getElementById('mini-cal-grid');
+    if (!miniGrid) return;
+    miniGrid.innerHTML = '';
+
+    // Update mini cal title
+    const miniTitle = document.querySelector('.mini-cal-title');
+    if (miniTitle) miniTitle.textContent = MONTH_NAMES[month] + ' ' + year;
+
+    // Day labels header row
+    DAY_LABELS_MINI.forEach(lbl => {
+      const d = document.createElement('div');
+      d.className = 'day-label';
+      d.textContent = lbl;
+      miniGrid.appendChild(d);
+    });
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    const totalCells = 42;
+
+    for (let i = 0; i < totalCells; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'mini-day';
+
+      let dayNum, cellMonth = month, cellYear = year, isOther = false;
+
+      if (i < firstDay) {
+        dayNum = daysInPrevMonth - firstDay + i + 1;
+        isOther = true;
+      } else if (i - firstDay >= daysInMonth) {
+        dayNum = i - firstDay - daysInMonth + 1;
+        isOther = true;
+      } else {
+        dayNum = i - firstDay + 1;
+      }
+
+      cell.textContent = dayNum;
+      if (isOther) cell.classList.add('other-month');
+
+      // Highlight today in mini cal
+      if (!isOther && year === TODAY.year && month === TODAY.month && dayNum === TODAY.day) {
+        cell.classList.add('today');
+      }
+
+      cell.addEventListener('click', () => {
+        // Clicking a mini-cal day keeps same month but marks selection
+        document.querySelectorAll('.mini-day.selected').forEach(el => el.classList.remove('selected'));
+        cell.classList.add('selected');
+      });
+
+      miniGrid.appendChild(cell);
+    }
+  }
+
+  // ── Event popup logic ──────────────────────────────────────────────────────
+  function showEventPopup(e, evt, year, month, day) {
+    const popup = document.getElementById('event-popup');
+    if (!popup) return;
+
+    // Populate popup fields
+    popup.querySelector('.popup-title').textContent = evt.name;
+    popup.querySelector('.popup-dot').style.background = evt.color;
+    document.getElementById('popup-time').textContent = evt.time;
+    document.getElementById('popup-cal').textContent = evt.cal;
+    document.getElementById('popup-loc').textContent = evt.loc || 'No location';
+    document.getElementById('popup-notes').textContent = evt.notes || '';
+
+    // Position near click, but keep in viewport
+    popup.classList.add('open');
+    const vw = window.innerWidth, vh = window.innerHeight;
+    let x = e.clientX + 12, y = e.clientY + 12;
+    if (x + 340 > vw) x = e.clientX - 352;
+    if (y + 220 > vh) y = e.clientY - 220;
+    popup.style.left = x + 'px';
+    popup.style.top  = y + 'px';
+  }
+
+  function closeEventPopup() {
+    const popup = document.getElementById('event-popup');
+    if (popup) popup.classList.remove('open');
+  }
+
+  // Close popup on outside click
+  document.addEventListener('click', (e) => {
+    const popup = document.getElementById('event-popup');
+    if (popup && popup.classList.contains('open') && !popup.contains(e.target)) {
+      closeEventPopup();
+    }
+  });
+
+  const popupClose = document.getElementById('popup-close');
+  if (popupClose) popupClose.addEventListener('click', closeEventPopup);
+
+  // ── Navigation buttons ─────────────────────────────────────────────────────
+  function navigate(delta) {
+    viewMonth += delta;
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
+    renderCalGrid(viewYear, viewMonth);
+    renderMiniCal(viewYear, viewMonth);
+  }
+
+  const btnPrev = document.getElementById('cal-prev');
+  const btnNext = document.getElementById('cal-next');
+  const btnToday = document.getElementById('cal-today');
+
+  if (btnPrev)  btnPrev.addEventListener('click',  () => navigate(-1));
+  if (btnNext)  btnNext.addEventListener('click',  () => navigate(+1));
+  if (btnToday) btnToday.addEventListener('click', () => {
+    viewYear  = TODAY.year;
+    viewMonth = TODAY.month;
+    renderCalGrid(viewYear, viewMonth);
+    renderMiniCal(viewYear, viewMonth);
+  });
+
+  // Wire mini-cal prev/next buttons
+  const miniNavBtns = document.querySelectorAll('.mini-cal-nav');
+  if (miniNavBtns.length >= 2) {
+    miniNavBtns[0].addEventListener('click', () => navigate(-1));
+    miniNavBtns[1].addEventListener('click', () => navigate(+1));
+  }
+
+  // ── New Event modal ────────────────────────────────────────────────────────
+  const btnNewEvent = document.getElementById('btn-new-event');
+  if (btnNewEvent) {
+    btnNewEvent.addEventListener('click', () => {
+      const modal = document.getElementById('new-event-modal');
+      if (modal) modal.classList.add('open');
+    });
+  }
+
+  // Save event button (demo only — logs to console)
+  const saveEvtBtn = document.getElementById('save-event-btn');
+  if (saveEvtBtn) {
+    saveEvtBtn.addEventListener('click', () => {
+      const title = document.getElementById('new-event-title')?.value;
+      if (title && title.trim()) {
+        closeModal('new-event-modal');
+      }
+    });
+  }
+
+  // ── Color picker in new event modal ───────────────────────────────────────
+  document.querySelectorAll('[title="Violet"],[title="Blue"],[title="Green"],[title="Red"],[title="Orange"],[title="Yellow"],[title="Pink"],[title="Indigo"]').forEach(dot => {
+    dot.addEventListener('click', () => {
+      document.querySelectorAll('.modal-box [style*="border-radius:50%"]').forEach(d => d.style.outline = '3px solid transparent');
+      dot.style.outline = '3px solid ' + dot.style.background;
+    });
+  });
+
+  // ── Initial render ─────────────────────────────────────────────────────────
+  renderCalGrid(viewYear, viewMonth);
+  renderMiniCal(viewYear, viewMonth);
+
+})();
+</script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>
